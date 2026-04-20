@@ -53,9 +53,9 @@
         "data_description": {
           "tariff_provider": "Select your electricity price provider integration.",
           "price_sensor": "Select the sensor entity that provides the current electricity price. For Tibber, use the price sensor. For Octopus, select the electricity price sensor. For Awattar/Nordpool, select the spot price sensor.",
-          "cheap_price_threshold": "Price below which electricity is considered cheap.",
-          "battery_charge_price_threshold": "Price below which battery charging from grid is allowed.",
-          "feed_in_tariff": "Price received per kWh for energy exported to the grid.",
+          "cheap_price_threshold": "Price below which electricity is considered cheap. Example: 0.1 (10 Cent)",
+          "battery_charge_price_threshold": "Price below which battery charging from grid is allowed. Example: 0.1 (10 Cent)",
+          "feed_in_tariff": "Price received per kWh for energy exported to the grid. Example: 0.081 (8.1 Cent)",
           "feed_in_tariff_sensor": "Optional sensor for dynamic feed-in tariff (overrides static value)"
         }
       },
