@@ -155,7 +155,7 @@
             "appliance_name": "A friendly name for this appliance.",
             "appliance_entity": "The switch or controllable entity for this appliance.",
             "appliance_priority": "Lower number = higher priority. Appliances with higher priority get excess power first.",
-            "nominal_power": "The rated power consumption of this appliance in watts.",
+            "nominal_power": "The rated power consumption of this appliance in watts. For dynamic current devices use max power.",
             "actual_power_entity": "Optional sensor that reports actual power consumption (W or kW — automatically converted).",
             "phases": "Number of electrical phases this appliance uses."
           }
