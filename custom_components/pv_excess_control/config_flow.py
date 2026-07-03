@@ -130,6 +130,7 @@ from .const import (
     DEFAULT_CONTROLLER_INTERVAL,
     DEFAULT_GRID_CHARGE_ENGAGE_MIN_DURATION_MINUTES,
     DEFAULT_GRID_VOLTAGE,
+    DEFAULT_ON_THRESHOLD,
     DEFAULT_OFF_THRESHOLD,
     DEFAULT_PLANNER_INTERVAL,
     DEFAULT_SWITCH_INTERVAL,
@@ -825,6 +826,15 @@ def _settings_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             ): NumberSelector(
                 NumberSelectorConfig(
                     min=0, max=100000, step=1, unit_of_measurement="W",
+                    mode=NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_ON_THRESHOLD,
+                default=d.get(CONF_ON_THRESHOLD, DEFAULT_ON_THRESHOLD),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=000, max=500, step=10, unit_of_measurement="W",
                     mode=NumberSelectorMode.BOX,
                 )
             ),
