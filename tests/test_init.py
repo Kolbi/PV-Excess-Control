@@ -1830,7 +1830,7 @@ class TestUpdateCycle:
         )
 
         # Must not raise TypeError (or any other exception)
-        data = await coord._async_update_data()
+        await coord._async_update_data()
 
         # PowerState with None fields should be stored in history
         assert len(coord.power_history) == 1
