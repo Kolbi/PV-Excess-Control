@@ -128,7 +128,7 @@ async def test_grid_charge_disengages_when_price_rises_above_threshold(
         inverter_ctl=mock_inverter_controller,
     )
 
-    with freeze_time():
+    with freeze_time() as ft:
         # Engage
         await coordinator._run_grid_charge_state_machine(
             mock_tariff_at(0.01, 0.02),
@@ -300,7 +300,7 @@ async def test_grid_charge_state_persisted_across_restart_disengages_when_condit
         inverter_ctl=mock_inverter_controller,
     )
     # Fresh restart: engage_ts is None, so elapsed = monotonic() - 0 ≈ huge → past hysteresis
-    with freeze_time() as ft:
+    with freeze_time():
         await coordinator._run_grid_charge_state_machine(
             mock_tariff_at(0.10, 0.02),  # not cheap
             mock_power_state_with_soc(70.0),
