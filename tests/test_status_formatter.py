@@ -25,7 +25,6 @@ from custom_components.pv_excess_control.models import (
 )
 
 
-
 class TestFormatDuration:
     """format_duration renders seconds as compact human-readable strings."""
 
