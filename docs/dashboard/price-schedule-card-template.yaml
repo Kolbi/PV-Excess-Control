@@ -15,7 +15,8 @@
 #
 #   2. For each appliance, duplicate one of the appliance series blocks and
 #      change:
-#        - name:              your appliance name (as configured in PV Excess Control)
+#        - name:              your appliance name (as configured in PV Excess 
+#                             Control)
 #        - color:             a distinct hex color
 #        - const name = '…':  must match the appliance name exactly
 #        - const h = …:       the Y-position (use 0.8, 0.6, 0.4, 0.2, etc.)
@@ -25,10 +26,12 @@
 # Prerequisites:
 #   - apexcharts-card installed via HACS (Frontend)
 #   - PV Excess Control integration with planner enabled
-#   - A tariff provider configured that exposes price windows in sensor attributes
+#   - A tariff provider configured that exposes price windows in sensor 
+#     attributes
 #
 # Tariff provider notes:
-#   - Octopus Energy: uses "rates" attribute with "value_inc_vat" field (default)
+#   - Octopus Energy: uses "rates" attribute with "value_inc_vat" field 
+#                     (default)
 #   - Tibber:         uses "today" / "tomorrow" attributes with "total" field
 #   - Nordpool:       uses "raw_today" / "raw_tomorrow" with "value" field
 #   - aWATTar:        uses "prices" attribute with "price" field
@@ -88,8 +91,8 @@
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
-        const name = 'My Appliance 1';                   // <- CHANGE to match your appliance name
-        const h = 0.8;                                   // <- CHANGE height (0.8, 0.6, 0.4, 0.2, ...)
+        const name = 'My Appliance 1'; // <- CHANGE to match your appliance name
+        const h = 0.8;                // <- CHANGE height (0.8, 0.6, ...)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const ms = today.getTime();
@@ -120,8 +123,8 @@
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
-        const name = 'My Appliance 2';                   // <- CHANGE to match your appliance name
-        const h = 0.6;                                   // <- CHANGE height
+        const name = 'My Appliance 2'; // <- CHANGE to match your appliance name
+        const h = 0.6;                 // <- CHANGE height
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const ms = today.getTime();
