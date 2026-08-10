@@ -1259,13 +1259,13 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             # Retrieve and update runtime from stored state
             previous = self.appliance_states.get(config.id)
-             restored = self._restored_daily_state.get(config.id, {})
-             runtime_today = (
+            restored = self._restored_daily_state.get(config.id, {})
+            runtime_today = (
                  previous.runtime_today
                  if previous
                  else timedelta(seconds=float(restored.get("runtime_seconds", 0.0)))
              )
-             energy_today = (
+            energy_today = (
                  previous.energy_today
                  if previous
                  else float(restored.get("energy_kwh", 0.0))
