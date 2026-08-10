@@ -24,6 +24,8 @@ from custom_components.pv_excess_control.models import (
     TariffWindow,
 )
 
+from dataclasses import FrozenInstanceError
+
 
 class TestFormatDuration:
     """format_duration renders seconds as compact human-readable strings."""
@@ -97,7 +99,7 @@ class TestFormattedStatus:
             plan_window_start=None,
             plan_window_end=None,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             fs.text = "mutated"  # type: ignore[misc]
 
 
