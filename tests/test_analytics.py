@@ -2,7 +2,6 @@
 
 from datetime import timedelta
 
-import pytest
 
 from custom_components.pv_excess_control.analytics import (
     AnalyticsTracker,
@@ -108,7 +107,7 @@ class TestAnalyticsTracker:
     def test_multiple_appliances_independent_stats(self):
         """Each appliance accumulates its own independent statistics."""
         tracker = AnalyticsTracker(feed_in_tariff=0.0, normal_import_price=0.25)
-        tracker.record_cycle("ev", 7000, 3600, "solar", 0.25)   # 7kWh
+        tracker.record_cycle("ev", 7000, 3600, "solar", 0.25)  # 7kWh
         tracker.record_cycle("heatpump", 2000, 1800, "solar", 0.25)  # 1kWh
 
         ev_stats = tracker.get_appliance_stats("ev")

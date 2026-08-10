@@ -1,12 +1,12 @@
 """Tests for PV Excess Control planner - timeline, battery, scheduling & plan."""
+
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta, UTC
 
 import pytest
 
 from custom_components.pv_excess_control.models import (
-    Action,
     ApplianceConfig,
     BatteryAllocation,
     BatteryConfig,
@@ -15,7 +15,6 @@ from custom_components.pv_excess_control.models import (
     ForecastData,
     HourlyForecast,
     Plan,
-    PlanEntry,
     PlanReason,
     TariffInfo,
     TariffWindow,
@@ -28,9 +27,10 @@ from custom_components.pv_excess_control.planner import Planner
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _dt(hour: int, minute: int = 0) -> datetime:
     """Create a UTC datetime on 2026-03-22 at the given hour:minute."""
-    return datetime(2026, 3, 22, hour, minute, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 22, hour, minute, 0, tzinfo=UTC)
 
 
 def _make_hourly_forecast(
@@ -93,6 +93,7 @@ def _make_battery_config(
 # ===========================================================================
 # TestBuildTimeline
 # ===========================================================================
+
 
 class TestBuildTimeline:
     """Tests for Planner.build_timeline()."""
@@ -232,7 +233,7 @@ class TestBuildTimeline:
         forecast = ForecastData(
             remaining_today_kwh=1.0,
             hourly_breakdown=[
-                _make_hourly_forecast(10, 300),   # Below base load
+                _make_hourly_forecast(10, 300),  # Below base load
                 _make_hourly_forecast(11, 1500),  # Above base load
             ],
         )
@@ -324,6 +325,7 @@ class TestBuildTimeline:
 # TestBatteryStrategy
 # ===========================================================================
 
+
 class TestBatteryStrategy:
     """Tests for Planner.calculate_battery_strategy()."""
 
@@ -333,14 +335,20 @@ class TestBatteryStrategy:
         # Timeline: 2 hours, each with 1000W excess -> 2kWh total
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.20,
+                is_cheap=False,
             ),
             TimeSlot(
-                start=_dt(11), end=_dt(12),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.25, is_cheap=False,
+                start=_dt(11),
+                end=_dt(12),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.25,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -364,14 +372,20 @@ class TestBatteryStrategy:
         """APPLIANCE_FIRST charges from whatever excess remains."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.20,
+                is_cheap=False,
             ),
             TimeSlot(
-                start=_dt(11), end=_dt(12),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.25, is_cheap=False,
+                start=_dt(11),
+                end=_dt(12),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.25,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -394,14 +408,20 @@ class TestBatteryStrategy:
         """BALANCED splits excess proportionally (50/50)."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.20,
+                is_cheap=False,
             ),
             TimeSlot(
-                start=_dt(11), end=_dt(12),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.25, is_cheap=False,
+                start=_dt(11),
+                end=_dt(12),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.25,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -426,9 +446,12 @@ class TestBatteryStrategy:
         """If current SoC >= target, no charging needed."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.20,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -449,14 +472,20 @@ class TestBatteryStrategy:
         """Factor in cheap tariff windows for grid charging."""
         slots = [
             TimeSlot(
-                start=_dt(2), end=_dt(3),
-                expected_solar_watts=0, expected_excess_watts=0,
-                price=0.05, is_cheap=True,  # Cheap nighttime slot
+                start=_dt(2),
+                end=_dt(3),
+                expected_solar_watts=0,
+                expected_excess_watts=0,
+                price=0.05,
+                is_cheap=True,  # Cheap nighttime slot
             ),
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.25, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.25,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -481,14 +510,20 @@ class TestBatteryStrategy:
         """When allow_grid_charging=False, cheap windows are not used for battery."""
         slots = [
             TimeSlot(
-                start=_dt(2), end=_dt(3),
-                expected_solar_watts=0, expected_excess_watts=0,
-                price=0.05, is_cheap=True,
+                start=_dt(2),
+                end=_dt(3),
+                expected_solar_watts=0,
+                expected_excess_watts=0,
+                price=0.05,
+                is_cheap=True,
             ),
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.25, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.25,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -510,9 +545,12 @@ class TestBatteryStrategy:
         """When charging need exceeds total available excess, reserve everything."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=600, expected_excess_watts=100,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=600,
+                expected_excess_watts=100,
+                price=0.20,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -534,13 +572,17 @@ class TestBatteryStrategy:
         """At 100% SoC, no charging needed regardless of target."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.20, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.20,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
-            capacity_kwh=10.0, target_soc=100.0,
+            capacity_kwh=10.0,
+            target_soc=100.0,
             strategy=BatteryStrategy.BATTERY_FIRST,
         )
 
@@ -564,14 +606,20 @@ class TestBatteryStrategy:
         """BATTERY_FIRST should prefer cheaper slots for charging."""
         slots = [
             TimeSlot(
-                start=_dt(10), end=_dt(11),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.30, is_cheap=False,
+                start=_dt(10),
+                end=_dt(11),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.30,
+                is_cheap=False,
             ),
             TimeSlot(
-                start=_dt(11), end=_dt(12),
-                expected_solar_watts=1500, expected_excess_watts=1000,
-                price=0.10, is_cheap=False,
+                start=_dt(11),
+                end=_dt(12),
+                expected_solar_watts=1500,
+                expected_excess_watts=1000,
+                price=0.10,
+                is_cheap=False,
             ),
         ]
         config = _make_battery_config(
@@ -596,6 +644,7 @@ class TestBatteryStrategy:
 # ---------------------------------------------------------------------------
 # Appliance helper
 # ---------------------------------------------------------------------------
+
 
 def _make_appliance(
     appliance_id: str = "app1",
@@ -654,7 +703,9 @@ def _make_tariff_info(
         current_price=current_price,
         feed_in_tariff=feed_in_tariff,
         cheap_price_threshold=cheap_threshold,
-        battery_charge_price_threshold=battery_charge_threshold if battery_charge_threshold is not None else cheap_threshold,
+        battery_charge_price_threshold=battery_charge_threshold
+        if battery_charge_threshold is not None
+        else cheap_threshold,
         windows=windows or [],
     )
 
@@ -662,6 +713,7 @@ def _make_tariff_info(
 # ===========================================================================
 # TestApplianceScheduling
 # ===========================================================================
+
 
 class TestApplianceScheduling:
     """Tests for appliance scheduling logic."""
@@ -676,8 +728,8 @@ class TestApplianceScheduling:
             hourly_breakdown=[
                 _make_hourly_forecast(10, 1500),  # 1000W excess after 500W base
                 _make_hourly_forecast(11, 1500),  # 1000W excess after 500W base
-                _make_hourly_forecast(12, 500),   # 0W excess
-                _make_hourly_forecast(13, 500),   # 0W excess
+                _make_hourly_forecast(12, 500),  # 0W excess
+                _make_hourly_forecast(13, 500),  # 0W excess
             ],
         )
         tariffs = [
@@ -719,7 +771,9 @@ class TestApplianceScheduling:
 
         assert len(high_entries) >= 1
         # High priority should get excess slots
-        excess_reasons = [e for e in high_entries if e.reason == PlanReason.EXCESS_AVAILABLE]
+        excess_reasons = [
+            e for e in high_entries if e.reason == PlanReason.EXCESS_AVAILABLE
+        ]
         assert len(excess_reasons) >= 1
 
         # Low priority should NOT get excess slots (taken by high prio)
@@ -879,6 +933,7 @@ class TestApplianceScheduling:
 # TestExportLimitManagement
 # ===========================================================================
 
+
 class TestExportLimitManagement:
     """Tests for export limit management."""
 
@@ -938,6 +993,7 @@ class TestExportLimitManagement:
 # TestWeatherPreplanning
 # ===========================================================================
 
+
 class TestWeatherPreplanning:
     """Tests for weather pre-planning."""
 
@@ -985,7 +1041,9 @@ class TestWeatherPreplanning:
         entries = [e for e in plan.entries if e.appliance_id == "pool_pump"]
         # With poor tomorrow, the planner should schedule additional entries
         # beyond the minimum 2 hours
-        weather_entries = [e for e in entries if e.reason == PlanReason.WEATHER_PREPLANNING]
+        weather_entries = [
+            e for e in entries if e.reason == PlanReason.WEATHER_PREPLANNING
+        ]
         # The plan should contain weather pre-planning entries
         assert len(weather_entries) >= 1
 
@@ -993,6 +1051,7 @@ class TestWeatherPreplanning:
 # ===========================================================================
 # TestCreatePlan
 # ===========================================================================
+
 
 class TestCreatePlan:
     """Tests for the full create_plan() method."""
@@ -1123,6 +1182,7 @@ class TestCreatePlan:
 # TestBatteryChargeThreshold
 # ===========================================================================
 
+
 class TestBatteryChargeThreshold:
     """Test that battery grid charging uses battery_charge_price_threshold, not cheap_price_threshold."""
 
@@ -1132,9 +1192,12 @@ class TestBatteryChargeThreshold:
         # Slot price is 0.04 (below battery threshold) -> should charge
         slots = [
             TimeSlot(
-                start=_dt(2), end=_dt(3),
-                expected_solar_watts=0.0, expected_excess_watts=0.0,
-                price=0.04, is_cheap=True,
+                start=_dt(2),
+                end=_dt(3),
+                expected_solar_watts=0.0,
+                expected_excess_watts=0.0,
+                price=0.04,
+                is_cheap=True,
             ),
         ]
         battery_config = _make_battery_config(
@@ -1150,7 +1213,10 @@ class TestBatteryChargeThreshold:
 
         planner = Planner()
         alloc = planner.calculate_battery_strategy(
-            slots, battery_config, current_soc=50.0, tariff=tariff,
+            slots,
+            battery_config,
+            current_soc=50.0,
+            tariff=tariff,
         )
 
         # Should have reserved the slot for grid charging
@@ -1163,9 +1229,12 @@ class TestBatteryChargeThreshold:
         # Slot price is 0.08 (above battery threshold but below cheap threshold)
         slots = [
             TimeSlot(
-                start=_dt(2), end=_dt(3),
-                expected_solar_watts=0.0, expected_excess_watts=0.0,
-                price=0.08, is_cheap=True,  # is_cheap=True from global!
+                start=_dt(2),
+                end=_dt(3),
+                expected_solar_watts=0.0,
+                expected_excess_watts=0.0,
+                price=0.08,
+                is_cheap=True,  # is_cheap=True from global!
             ),
         ]
         battery_config = _make_battery_config(
@@ -1181,7 +1250,10 @@ class TestBatteryChargeThreshold:
 
         planner = Planner()
         alloc = planner.calculate_battery_strategy(
-            slots, battery_config, current_soc=50.0, tariff=tariff,
+            slots,
+            battery_config,
+            current_soc=50.0,
+            tariff=tariff,
         )
 
         # Should NOT have reserved (price above battery threshold)
@@ -1192,6 +1264,7 @@ class TestBatteryChargeThreshold:
 # TestPlannerPerApplianceThreshold
 # ===========================================================================
 
+
 class TestPlannerPerApplianceThreshold:
     """Test that planner Tier 2 scheduling uses per-appliance cheap threshold."""
 
@@ -1201,9 +1274,12 @@ class TestPlannerPerApplianceThreshold:
         # Slot at price 0.10: is_cheap=False (global), but below per-appliance threshold
         slots = [
             TimeSlot(
-                start=_dt(1), end=_dt(2),
-                expected_solar_watts=0.0, expected_excess_watts=0.0,
-                price=0.10, is_cheap=False,
+                start=_dt(1),
+                end=_dt(2),
+                expected_solar_watts=0.0,
+                expected_excess_watts=0.0,
+                price=0.10,
+                is_cheap=False,
             ),
         ]
         appliance = _make_appliance(
@@ -1223,7 +1299,10 @@ class TestPlannerPerApplianceThreshold:
 
         planner = Planner()
         entries = planner.schedule_appliances(
-            slots, battery_alloc, [appliance], cheap_price_threshold=0.05,
+            slots,
+            battery_alloc,
+            [appliance],
+            cheap_price_threshold=0.05,
         )
 
         # Should schedule in the slot via Tier 2 (per-appliance threshold allows it)
@@ -1236,9 +1315,12 @@ class TestPlannerPerApplianceThreshold:
         # Global threshold=0.05, slot price=0.10 (above global)
         slots = [
             TimeSlot(
-                start=_dt(1), end=_dt(2),
-                expected_solar_watts=0.0, expected_excess_watts=0.0,
-                price=0.10, is_cheap=False,
+                start=_dt(1),
+                end=_dt(2),
+                expected_solar_watts=0.0,
+                expected_excess_watts=0.0,
+                price=0.10,
+                is_cheap=False,
             ),
         ]
         appliance = _make_appliance(
@@ -1258,7 +1340,10 @@ class TestPlannerPerApplianceThreshold:
 
         planner = Planner()
         entries = planner.schedule_appliances(
-            slots, battery_alloc, [appliance], cheap_price_threshold=0.05,
+            slots,
+            battery_alloc,
+            [appliance],
+            cheap_price_threshold=0.05,
         )
 
         # Tier 2 should NOT schedule (price above global threshold, no per-appliance override)

@@ -4,11 +4,11 @@ Uses standard unittest.mock since pytest-homeassistant-custom-component
 is not available. These tests verify the production logic is correct
 and can be adapted to use HA test fixtures later.
 """
+
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
+from datetime import datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -52,6 +52,7 @@ from custom_components.pv_excess_control.models import (
 # ---------------------------------------------------------------------------
 # Mock helpers
 # ---------------------------------------------------------------------------
+
 
 class MockState:
     """Minimal mock for an HA state object."""
@@ -99,7 +100,9 @@ class MockHttp:
     def __init__(self) -> None:
         self._registered: list[tuple[str, str]] = []
 
-    def register_static_path(self, url_path: str, path: str, cache_headers: bool = True) -> None:
+    def register_static_path(
+        self, url_path: str, path: str, cache_headers: bool = True
+    ) -> None:
         self._registered.append((url_path, path))
 
 
@@ -126,7 +129,9 @@ class MockHass:
         self.async_add_job = MagicMock()
         self.loop = asyncio.get_event_loop()
         # async_create_task needed by DataUpdateCoordinator
-        self.async_create_task = MagicMock(side_effect=lambda coro, **kw: asyncio.ensure_future(coro))
+        self.async_create_task = MagicMock(
+            side_effect=lambda coro, **kw: asyncio.ensure_future(coro)
+        )
 
 
 def _make_config_entry(
@@ -216,9 +221,7 @@ def _make_coordinator(
         CONF_BATTERY_STRATEGY, BatteryStrategy.BALANCED
     )
 
-    coord._plan_influence = entry.data.get(
-        CONF_PLAN_INFLUENCE, PlanInfluence.LIGHT
-    )
+    coord._plan_influence = entry.data.get(CONF_PLAN_INFLUENCE, PlanInfluence.LIGHT)
     coord._last_discharge_limit = None
     coord._last_state_change = {}
     coord._last_applied_current = {}
@@ -244,7 +247,9 @@ def _make_coordinator(
 
     coord.analytics = AnalyticsTracker(feed_in_tariff=0.0, normal_import_price=0.25)
     coord.notifications = NotificationManager(
-        hass, notification_settings=None, notification_service=None,
+        hass,
+        notification_settings=None,
+        notification_service=None,
     )
 
     return coord
@@ -306,16 +311,18 @@ class TestCollectPowerState:
 
     def test_combined_import_export_sensor_positive(self):
         """Combined import/export sensor: positive = export."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_IMPORT_EXPORT: "sensor.grid_power",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_IMPORT_EXPORT: "sensor.grid_power",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_power": MockState("1500"),  # exporting
@@ -331,16 +338,18 @@ class TestCollectPowerState:
 
     def test_combined_import_export_sensor_negative(self):
         """Combined import/export sensor: negative = import."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_IMPORT_EXPORT: "sensor.grid_power",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_IMPORT_EXPORT: "sensor.grid_power",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("500"),
             "sensor.grid_power": MockState("-800"),  # importing
@@ -356,18 +365,20 @@ class TestCollectPowerState:
 
     def test_battery_sensors_read(self):
         """Battery SOC and power sensors are read when configured."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_SOC: "sensor.battery_soc",
-            "battery_power": "sensor.battery_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_SOC: "sensor.battery_soc",
+                "battery_power": "sensor.battery_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("5000"),
             "sensor.grid_export": MockState("2000"),
@@ -385,19 +396,21 @@ class TestCollectPowerState:
 
     def test_separate_battery_charge_discharge_sensors(self):
         """Separate charge/discharge sensors are combined into battery_power."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_SOC: "sensor.battery_soc",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_SOC: "sensor.battery_soc",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("5000"),
             "sensor.grid_export": MockState("2000"),
@@ -417,19 +430,21 @@ class TestCollectPowerState:
 
     def test_separate_battery_sensors_discharging(self):
         """Separate sensors when battery is discharging."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_SOC: "sensor.battery_soc",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_SOC: "sensor.battery_soc",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("500"),
             "sensor.grid_export": MockState("0"),
@@ -448,20 +463,22 @@ class TestCollectPowerState:
 
     def test_combined_battery_sensor_takes_precedence(self):
         """When combined battery_power is set, it takes precedence over separate sensors."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_SOC: "sensor.battery_soc",
-            CONF_BATTERY_POWER: "sensor.battery_combined",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_SOC: "sensor.battery_soc",
+                CONF_BATTERY_POWER: "sensor.battery_combined",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("5000"),
             "sensor.grid_export": MockState("2000"),
@@ -481,15 +498,17 @@ class TestCollectPowerState:
 
     def test_excess_calculated_from_grid_when_no_load(self):
         """When load_power is 0 or unavailable, excess = grid_export - grid_import."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("3000"),
             "sensor.grid_export": MockState("1500"),
@@ -507,18 +526,20 @@ class TestCollectPowerState:
         positive grid_export reading must NOT cause excess to collapse to
         the export value. Excess should reflect pv - load (the surplus
         currently being absorbed by the battery)."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4216"),
             "sensor.grid_export": MockState("5"),  # <-- the bug trigger
@@ -540,18 +561,20 @@ class TestCollectPowerState:
         excess must equal pv - load. (Today's code happens to return
         the same value via the existing fallback; this test guards
         against a future regression of the new branch.)"""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4200"),
             "sensor.grid_export": MockState("0"),
@@ -570,18 +593,20 @@ class TestCollectPowerState:
         """Battery near full: even with a large positive grid_export,
         the new branch must use pv - load. This proves the topology
         check (has_battery) wins over the magnitude of grid_export."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("5000"),
             "sensor.grid_export": MockState("4000"),  # battery near full
@@ -600,18 +625,20 @@ class TestCollectPowerState:
     def test_hybrid_battery_discharging_pv_minus_load_goes_negative(self):
         """Evening sanity check: when the battery is discharging and load
         exceeds PV, excess must go negative so the optimizer sheds."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("200"),
             "sensor.grid_export": MockState("0"),
@@ -630,17 +657,19 @@ class TestCollectPowerState:
     def test_hybrid_uses_combined_battery_power_sensor(self):
         """has_battery must also detect the combined CONF_BATTERY_POWER
         configuration, not just separate charge/discharge sensors."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_POWER: "sensor.battery_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_POWER: "sensor.battery_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4500"),
             "sensor.grid_export": MockState("8"),  # tiny positive
@@ -659,16 +688,18 @@ class TestCollectPowerState:
         """Regression guard: pure-inverter setups (no battery sensor)
         must still use grid_export when it's positive. This is the
         byte-for-byte unchanged path."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_export": MockState("1200"),
@@ -688,18 +719,20 @@ class TestCollectPowerState:
         """Regression guard: combined import/export sensor topology
         must take precedence over has_battery and use the
         grid_export - grid_import formula unchanged."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_IMPORT_EXPORT: "sensor.grid_power",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_IMPORT_EXPORT: "sensor.grid_power",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_power": MockState("1500"),  # combined: positive = export
@@ -717,18 +750,20 @@ class TestCollectPowerState:
 
     def test_pv_unavailable_hybrid_branch_returns_none_excess(self):
         """Hybrid config, PV sensor unavailable → excess and pv_production both None."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("unavailable"),
             "sensor.grid_export": MockState("0"),
@@ -746,18 +781,20 @@ class TestCollectPowerState:
 
     def test_load_unavailable_hybrid_with_grid_export_zero_returns_none(self):
         """Hybrid config, load unavailable, grid_export=0 → fallback needs load → None."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_export": MockState("0"),
@@ -779,16 +816,18 @@ class TestCollectPowerState:
         The grid_export branch does not need PV, so excess_power equals
         grid_export. pv_production is still None in PowerState.
         """
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("unavailable"),
             "sensor.grid_export": MockState("1200"),
@@ -804,16 +843,18 @@ class TestCollectPowerState:
 
     def test_pv_unavailable_non_hybrid_grid_export_fallback_returns_none(self):
         """Pure inverter, PV unavailable, grid_export == 0 → fallback needs PV → None."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("unavailable"),
             "sensor.grid_export": MockState("0"),
@@ -833,16 +874,18 @@ class TestCollectPowerState:
         Nuance 1a from the spec: user configured grid_export as their truth
         source; silently switching to pv-load would mask the misconfiguration.
         """
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_export": MockState("unavailable"),
@@ -858,16 +901,18 @@ class TestCollectPowerState:
 
     def test_combined_import_export_unavailable_returns_none(self):
         """Combined sensor topology, combined sensor unavailable → excess=None."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_IMPORT_EXPORT: "sensor.grid_power",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_IMPORT_EXPORT: "sensor.grid_power",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_power": MockState("unavailable"),
@@ -888,18 +933,20 @@ class TestCollectPowerState:
         Hybrid predicate is False (load_power is None), so it falls through
         to the grid_export_entity branch. grid_export=1500>0 → excess=1500.
         """
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_export": MockState("1500"),
@@ -917,18 +964,20 @@ class TestCollectPowerState:
 
     def test_all_sensors_good_hybrid_still_works(self):
         """Regression guard: hybrid happy path still produces pv-load."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("4500"),
             "sensor.grid_export": MockState("0"),
@@ -947,16 +996,18 @@ class TestCollectPowerState:
 
     def test_upstream_sensor_fields_are_none_when_unavailable(self):
         """PowerState upstream fields are None (not 0.0) when sensors are unavailable."""
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         states = {
             "sensor.pv_power": MockState("unavailable"),
             "sensor.grid_export": MockState("unavailable"),
@@ -974,18 +1025,21 @@ class TestCollectPowerState:
     def test_sensor_unavailable_logs_warning_once(self, caplog):
         """First cycle after transition: one WARNING. Subsequent cycles: no additional log."""
         import logging
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         good_states = {
             "sensor.pv_power": MockState("4000"),
             "sensor.grid_export": MockState("0"),
@@ -1003,11 +1057,14 @@ class TestCollectPowerState:
         # Cycle 2: PV transitions to unavailable.
         hass.states._states["sensor.pv_power"] = MockState("unavailable")
 
-        with caplog.at_level(logging.WARNING, logger="custom_components.pv_excess_control"):
+        with caplog.at_level(
+            logging.WARNING, logger="custom_components.pv_excess_control"
+        ):
             coord._collect_power_state()
 
         warnings = [
-            r for r in caplog.records
+            r
+            for r in caplog.records
             if r.levelno == logging.WARNING
             and "sensor.pv_power" in r.getMessage()
             and "unavailable" in r.getMessage().lower()
@@ -1019,7 +1076,9 @@ class TestCollectPowerState:
 
         # Cycle 3: still unavailable — no additional warning
         caplog.clear()
-        with caplog.at_level(logging.WARNING, logger="custom_components.pv_excess_control"):
+        with caplog.at_level(
+            logging.WARNING, logger="custom_components.pv_excess_control"
+        ):
             coord._collect_power_state()
 
         warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
@@ -1030,18 +1089,21 @@ class TestCollectPowerState:
     def test_sensor_recovery_logs_info(self, caplog):
         """Transition unavailable → available: one INFO log line."""
         import logging
-        entry = _make_config_entry(data={
-            CONF_PV_POWER: "sensor.pv_power",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-            CONF_LOAD_POWER: "sensor.load_power",
-            CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
-            CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
-            CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
-            CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
-            CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
-            CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
-            CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
-        })
+
+        entry = _make_config_entry(
+            data={
+                CONF_PV_POWER: "sensor.pv_power",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+                CONF_LOAD_POWER: "sensor.load_power",
+                CONF_BATTERY_CHARGE_POWER: "sensor.battery_charge",
+                CONF_BATTERY_DISCHARGE_POWER: "sensor.battery_discharge",
+                CONF_GRID_VOLTAGE: DEFAULT_GRID_VOLTAGE,
+                CONF_CONTROLLER_INTERVAL: DEFAULT_CONTROLLER_INTERVAL,
+                CONF_PLANNER_INTERVAL: DEFAULT_PLANNER_INTERVAL,
+                CONF_TARIFF_PROVIDER: TariffProviderEnum.NONE,
+                CONF_FORECAST_PROVIDER: ForecastProviderEnum.NONE,
+            }
+        )
         bad_states = {
             "sensor.pv_power": MockState("unavailable"),
             "sensor.grid_export": MockState("0"),
@@ -1059,11 +1121,14 @@ class TestCollectPowerState:
         # Cycle 2: PV recovers
         hass.states._states["sensor.pv_power"] = MockState("4000")
 
-        with caplog.at_level(logging.INFO, logger="custom_components.pv_excess_control"):
+        with caplog.at_level(
+            logging.INFO, logger="custom_components.pv_excess_control"
+        ):
             coord._collect_power_state()
 
         infos = [
-            r for r in caplog.records
+            r
+            for r in caplog.records
             if r.levelno == logging.INFO
             and "sensor.pv_power" in r.getMessage()
             and "available" in r.getMessage().lower()
@@ -1084,11 +1149,13 @@ class TestPowerHistory:
 
     def test_history_appends(self):
         """Power states are appended to history."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("1000"),
-            "sensor.grid_export": MockState("500"),
-            "sensor.load_power": MockState("500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("1000"),
+                "sensor.grid_export": MockState("500"),
+                "sensor.load_power": MockState("500"),
+            }
+        )
 
         ps = coord._collect_power_state()
         coord.power_history.append(ps)
@@ -1100,11 +1167,13 @@ class TestPowerHistory:
         """History is capped at MAX_HISTORY_SIZE entries."""
         from custom_components.pv_excess_control.coordinator import MAX_HISTORY_SIZE
 
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("1000"),
-            "sensor.grid_export": MockState("500"),
-            "sensor.load_power": MockState("500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("1000"),
+                "sensor.grid_export": MockState("500"),
+                "sensor.load_power": MockState("500"),
+            }
+        )
 
         # Fill history beyond max
         for i in range(MAX_HISTORY_SIZE + 20):
@@ -1126,9 +1195,7 @@ class TestPowerHistory:
         assert len(coord.power_history) == MAX_HISTORY_SIZE
         # Oldest entry should have been popped (first entry should be 20)
         assert coord.power_history[0].pv_production == 20.0
-        assert coord.power_history[-1].pv_production == float(
-            MAX_HISTORY_SIZE + 20 - 1
-        )
+        assert coord.power_history[-1].pv_production == float(MAX_HISTORY_SIZE + 20 - 1)
 
 
 # ---------------------------------------------------------------------------
@@ -1141,22 +1208,26 @@ class TestStartupGracePeriod:
 
     def test_grace_period_active_on_startup(self):
         """Coordinator should skip optimization during startup grace period."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("3000"),
-            "sensor.grid_export": MockState("1500"),
-            "sensor.load_power": MockState("1500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("3000"),
+                "sensor.grid_export": MockState("1500"),
+                "sensor.load_power": MockState("1500"),
+            }
+        )
         # Just created, so startup time is now
         elapsed = (datetime.now() - coord._startup_time).total_seconds()
         assert elapsed < DEFAULT_STARTUP_GRACE_PERIOD
 
     def test_grace_period_expired(self):
         """After grace period, optimization should proceed."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("3000"),
-            "sensor.grid_export": MockState("1500"),
-            "sensor.load_power": MockState("1500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("3000"),
+                "sensor.grid_export": MockState("1500"),
+                "sensor.load_power": MockState("1500"),
+            }
+        )
         # Backdate startup time
         coord._startup_time = datetime.now() - timedelta(
             seconds=DEFAULT_STARTUP_GRACE_PERIOD + 10
@@ -1167,11 +1238,13 @@ class TestStartupGracePeriod:
 
     def test_disabled_skips_optimization(self):
         """When disabled, coordinator skips optimization."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("3000"),
-            "sensor.grid_export": MockState("1500"),
-            "sensor.load_power": MockState("1500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("3000"),
+                "sensor.grid_export": MockState("1500"),
+                "sensor.load_power": MockState("1500"),
+            }
+        )
         coord.enabled = False
         assert coord.enabled is False
 
@@ -1221,11 +1294,13 @@ class TestBuildCoordinatorData:
 
     def test_with_power_history(self):
         """Data output includes latest power state."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("3000"),
-            "sensor.grid_export": MockState("1500"),
-            "sensor.load_power": MockState("1500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("3000"),
+                "sensor.grid_export": MockState("1500"),
+                "sensor.load_power": MockState("1500"),
+            }
+        )
 
         ps = coord._collect_power_state()
         coord.power_history.append(ps)
@@ -1388,10 +1463,12 @@ class TestGetApplianceStates:
         assert result["sub_1"].is_on is True
         assert result["sub_1"].appliance_id == "sub_1"
 
-
     def test_disabled_appliance_state_preserved(self):
         """Disabling an appliance should NOT reset its runtime/energy counters."""
-        from custom_components.pv_excess_control.models import ApplianceConfig, ApplianceState
+        from custom_components.pv_excess_control.models import (
+            ApplianceConfig,
+            ApplianceState,
+        )
 
         states = {"switch.pump": MockState("on")}
         # Create a subentry so the coordinator knows the appliance exists
@@ -1412,14 +1489,28 @@ class TestGetApplianceStates:
         coord = _make_coordinator(states=states, entry=entry)
 
         config = ApplianceConfig(
-            id="sub_pump", name="Pool Pump", entity_id="switch.pump",
-            priority=2, phases=1, nominal_power=1000.0, actual_power_entity=None,
-            dynamic_current=False, current_entity=None, min_current=0.0,
-            max_current=16.0, ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=None, max_daily_runtime=None,
-            schedule_deadline=None, switch_interval=300,
-            allow_grid_supplement=False, max_grid_power=None,
+            id="sub_pump",
+            name="Pool Pump",
+            entity_id="switch.pump",
+            priority=2,
+            phases=1,
+            nominal_power=1000.0,
+            actual_power_entity=None,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=16.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
+            max_grid_power=None,
         )
 
         # First call: build state with runtime accumulated
@@ -1428,10 +1519,15 @@ class TestGetApplianceStates:
 
         # Simulate accumulated runtime by setting state directly
         coord.appliance_states["sub_pump"] = ApplianceState(
-            appliance_id="sub_pump", is_on=True, current_power=1000.0,
-            current_amperage=None, runtime_today=timedelta(hours=1, minutes=30),
-            energy_today=1.5, last_state_change=None,
-            ev_connected=None, ev_soc=None,
+            appliance_id="sub_pump",
+            is_on=True,
+            current_power=1000.0,
+            current_amperage=None,
+            runtime_today=timedelta(hours=1, minutes=30),
+            energy_today=1.5,
+            last_state_change=None,
+            ev_connected=None,
+            ev_soc=None,
         )
 
         # Now simulate disabling: call _get_appliance_states with EMPTY configs
@@ -1445,7 +1541,7 @@ class TestGetApplianceStates:
 
     def test_removed_appliance_state_not_preserved(self):
         """State for a completely removed appliance (no subentry) should NOT be preserved."""
-        from custom_components.pv_excess_control.models import ApplianceConfig, ApplianceState
+        from custom_components.pv_excess_control.models import ApplianceState
 
         states = {"switch.pump": MockState("on")}
         # No subentries — the appliance was fully removed
@@ -1454,10 +1550,15 @@ class TestGetApplianceStates:
 
         # Simulate leftover state from before removal
         coord.appliance_states["old_appliance"] = ApplianceState(
-            appliance_id="old_appliance", is_on=False, current_power=0.0,
-            current_amperage=None, runtime_today=timedelta(hours=2),
-            energy_today=3.0, last_state_change=None,
-            ev_connected=None, ev_soc=None,
+            appliance_id="old_appliance",
+            is_on=False,
+            current_power=0.0,
+            current_amperage=None,
+            runtime_today=timedelta(hours=2),
+            energy_today=3.0,
+            last_state_change=None,
+            ev_connected=None,
+            ev_soc=None,
         )
 
         result = coord._get_appliance_states([])
@@ -1510,21 +1611,28 @@ class TestSetupAndUnload:
         )
         from custom_components.pv_excess_control.coordinator import PvExcessCoordinator
 
-        hass = MockHass(states={
-            "sensor.pv_power": MockState("1000"),
-            "sensor.grid_export": MockState("500"),
-            "sensor.load_power": MockState("500"),
-        })
+        hass = MockHass(
+            states={
+                "sensor.pv_power": MockState("1000"),
+                "sensor.grid_export": MockState("500"),
+                "sensor.load_power": MockState("500"),
+            }
+        )
         entry = _make_config_entry()
 
         # Patch the coordinator to avoid real HA DataUpdateCoordinator behavior
-        with patch.object(
-            PvExcessCoordinator, "async_config_entry_first_refresh", new_callable=AsyncMock
-        ) as mock_refresh, patch.object(
-            hass.config_entries,
-            "async_forward_entry_setups",
-            new_callable=AsyncMock,
-        ) as mock_forward:
+        with (
+            patch.object(
+                PvExcessCoordinator,
+                "async_config_entry_first_refresh",
+                new_callable=AsyncMock,
+            ) as mock_refresh,
+            patch.object(
+                hass.config_entries,
+                "async_forward_entry_setups",
+                new_callable=AsyncMock,
+            ) as mock_forward,
+        ):
             result = await async_setup_entry(hass, entry)
 
         assert result is True
@@ -1687,11 +1795,13 @@ class TestUpdateCycle:
     @pytest.mark.asyncio
     async def test_planner_counter_resets(self):
         """Planner counter resets when it reaches the ratio threshold."""
-        coord = _make_coordinator(states={
-            "sensor.pv_power": MockState("1000"),
-            "sensor.grid_export": MockState("500"),
-            "sensor.load_power": MockState("500"),
-        })
+        coord = _make_coordinator(
+            states={
+                "sensor.pv_power": MockState("1000"),
+                "sensor.grid_export": MockState("500"),
+                "sensor.load_power": MockState("500"),
+            }
+        )
 
         # Set counter to one below reset threshold
         ratio = max(
@@ -1720,7 +1830,7 @@ class TestUpdateCycle:
         )
 
         # Must not raise TypeError (or any other exception)
-        data = await coord._async_update_data()
+        await coord._async_update_data()
 
         # PowerState with None fields should be stored in history
         assert len(coord.power_history) == 1
@@ -1843,9 +1953,11 @@ class TestNeededByOthersCooldownBypass:
     def test_cooldown_bypassed_for_appliance_in_needed_by_others(self):
         """The switch-interval guard skips appliances in _needed_by_others."""
         from custom_components.pv_excess_control.models import (
-            ApplianceConfig, BatteryDischargeAction, ControlDecision, Action,
+            ControlDecision,
+            Action,
             OptimizerResult,
         )
+
         states = {"switch.pool_pump": MockState("off")}
         sub_helper = MagicMock()
         sub_helper.data = {
@@ -1880,7 +1992,7 @@ class TestNeededByOthersCooldownBypass:
         coord = _make_coordinator(states=states, entry=entry)
 
         # Populate configs and _needed_by_others
-        configs = coord._get_appliance_configs()
+        coord._get_appliance_configs()
         # Simulate: pool pump was turned off 10 seconds ago (cooldown would
         # normally block the next on-command for 290 more seconds)
         coord._last_state_change["sub_helper"] = datetime.now() - timedelta(seconds=10)
@@ -1913,8 +2025,11 @@ class TestNeededByOthersCooldownBypass:
     def test_cooldown_respected_for_appliance_not_needed_by_others(self):
         """A standalone appliance (not in _needed_by_others) still respects cooldown."""
         from custom_components.pv_excess_control.models import (
-            BatteryDischargeAction, ControlDecision, Action, OptimizerResult,
+            ControlDecision,
+            Action,
+            OptimizerResult,
         )
+
         states = {"switch.standalone": MockState("off")}
         sub = MagicMock()
         sub.data = {
@@ -2015,8 +2130,11 @@ class TestNeededByOthersCooldownBypass:
     def test_off_transition_also_bypasses_cooldown_for_needed_appliance(self):
         """The _needed_by_others bypass applies to OFF commands too, not only ON."""
         from custom_components.pv_excess_control.models import (
-            BatteryDischargeAction, ControlDecision, Action, OptimizerResult,
+            ControlDecision,
+            Action,
+            OptimizerResult,
         )
+
         states = {"switch.pool_pump": MockState("on")}
         sub_helper = MagicMock()
         sub_helper.data = {
@@ -2093,6 +2211,7 @@ class TestActivationCountingOnStateTransition:
 
     def _make_config(self, appliance_id: str = "sub_1", entity_id: str = "switch.test"):
         from custom_components.pv_excess_control.models import ApplianceConfig
+
         return ApplianceConfig(
             id=appliance_id,
             name="Test",

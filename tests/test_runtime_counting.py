@@ -1,4 +1,5 @@
 """Tests for runtime counting with completion_power_threshold."""
+
 from datetime import timedelta
 
 import pytest
@@ -12,17 +13,29 @@ class TestRuntimeCounting:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         config = ApplianceConfig(
-            id="heater", name="Heater", entity_id="switch.heater",
-            priority=1, phases=1, nominal_power=6000.0,
+            id="heater",
+            name="Heater",
+            entity_id="switch.heater",
+            priority=1,
+            phases=1,
+            nominal_power=6000.0,
             actual_power_entity="sensor.heater_power",
-            dynamic_current=False, current_entity=None,
-            min_current=0.0, max_current=0.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=timedelta(hours=3),
-            max_daily_runtime=None, schedule_deadline=None,
-            switch_interval=300, allow_grid_supplement=False,
-            max_grid_power=None, completion_power_threshold=500.0,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=0.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=timedelta(hours=3),
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
+            max_grid_power=None,
+            completion_power_threshold=500.0,
         )
 
         # Simulate runtime counting logic from coordinator
@@ -47,17 +60,29 @@ class TestRuntimeCounting:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         config = ApplianceConfig(
-            id="heater", name="Heater", entity_id="switch.heater",
-            priority=1, phases=1, nominal_power=6000.0,
+            id="heater",
+            name="Heater",
+            entity_id="switch.heater",
+            priority=1,
+            phases=1,
+            nominal_power=6000.0,
             actual_power_entity="sensor.heater_power",
-            dynamic_current=False, current_entity=None,
-            min_current=0.0, max_current=0.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=timedelta(hours=3),
-            max_daily_runtime=None, schedule_deadline=None,
-            switch_interval=300, allow_grid_supplement=False,
-            max_grid_power=None, completion_power_threshold=500.0,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=0.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=timedelta(hours=3),
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
+            max_grid_power=None,
+            completion_power_threshold=500.0,
         )
 
         is_on = True
@@ -80,16 +105,27 @@ class TestRuntimeCounting:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         config = ApplianceConfig(
-            id="heater", name="Heater", entity_id="switch.heater",
-            priority=1, phases=1, nominal_power=6000.0,
+            id="heater",
+            name="Heater",
+            entity_id="switch.heater",
+            priority=1,
+            phases=1,
+            nominal_power=6000.0,
             actual_power_entity="sensor.heater_power",
-            dynamic_current=False, current_entity=None,
-            min_current=0.0, max_current=0.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=timedelta(hours=3),
-            max_daily_runtime=None, schedule_deadline=None,
-            switch_interval=300, allow_grid_supplement=False,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=0.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=timedelta(hours=3),
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
             max_grid_power=None,
             # completion_power_threshold defaults to None
         )
@@ -115,16 +151,27 @@ class TestRuntimeCounting:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         config = ApplianceConfig(
-            id="heater", name="Heater", entity_id="switch.heater",
-            priority=1, phases=1, nominal_power=6000.0,
+            id="heater",
+            name="Heater",
+            entity_id="switch.heater",
+            priority=1,
+            phases=1,
+            nominal_power=6000.0,
             actual_power_entity="sensor.heater_power",
-            dynamic_current=False, current_entity=None,
-            min_current=0.0, max_current=0.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=None,
-            max_daily_runtime=None, schedule_deadline=None,
-            switch_interval=300, allow_grid_supplement=False,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=0.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
             max_grid_power=None,
         )
 
@@ -133,7 +180,8 @@ class TestRuntimeCounting:
 
         # New logic: only fall back to nominal when no actual_power_entity
         power_for_energy = (
-            current_power if current_power > 0
+            current_power
+            if current_power > 0
             else (0.0 if config.actual_power_entity else config.nominal_power)
         )
         energy_delta = (power_for_energy * cycle_seconds) / 3600 / 1000
@@ -145,16 +193,27 @@ class TestRuntimeCounting:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         config = ApplianceConfig(
-            id="heater", name="Heater", entity_id="switch.heater",
-            priority=1, phases=1, nominal_power=6000.0,
+            id="heater",
+            name="Heater",
+            entity_id="switch.heater",
+            priority=1,
+            phases=1,
+            nominal_power=6000.0,
             actual_power_entity=None,  # No power sensor
-            dynamic_current=False, current_entity=None,
-            min_current=0.0, max_current=0.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
-            on_only=False, min_daily_runtime=None,
-            max_daily_runtime=None, schedule_deadline=None,
-            switch_interval=300, allow_grid_supplement=False,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=0.0,
+            max_current=0.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
+            on_only=False,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
+            schedule_deadline=None,
+            switch_interval=300,
+            allow_grid_supplement=False,
             max_grid_power=None,
         )
 
@@ -162,7 +221,8 @@ class TestRuntimeCounting:
         cycle_seconds = 30.0
 
         power_for_energy = (
-            current_power if current_power > 0
+            current_power
+            if current_power > 0
             else (0.0 if config.actual_power_entity else config.nominal_power)
         )
         energy_delta = (power_for_energy * cycle_seconds) / 3600 / 1000

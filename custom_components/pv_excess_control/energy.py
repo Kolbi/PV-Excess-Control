@@ -3,15 +3,18 @@
 HA-agnostic: providers accept state dicts (entity_id -> {state, attributes})
 rather than HA objects, making them straightforwardly unit-testable.
 """
+
 from __future__ import annotations
 
 import logging
 import math
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from custom_components.pv_excess_control.const import TariffProvider as TariffProviderEnum
+from custom_components.pv_excess_control.const import (
+    TariffProvider as TariffProviderEnum,
+)
 from custom_components.pv_excess_control.models import TariffInfo, TariffWindow
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,7 +47,9 @@ def _parse_dt(value: str | datetime) -> datetime:
     return datetime.fromisoformat(value)
 
 
-def _make_window(start: datetime, end: datetime, price: float, threshold: float) -> TariffWindow:
+def _make_window(
+    start: datetime, end: datetime, price: float, threshold: float
+) -> TariffWindow:
     """Create a TariffWindow with is_cheap derived from price <= threshold."""
     return TariffWindow(start=start, end=end, price=price, is_cheap=price <= threshold)
 
@@ -52,6 +57,7 @@ def _make_window(start: datetime, end: datetime, price: float, threshold: float)
 # ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
+
 
 class TariffProvider(ABC):
     """Base class for tariff providers."""
@@ -81,6 +87,7 @@ class TariffProvider(ABC):
 # GenericTariffProvider
 # ---------------------------------------------------------------------------
 
+
 class GenericTariffProvider(TariffProvider):
     """Reads current price from any HA sensor.
 
@@ -104,7 +111,10 @@ class GenericTariffProvider(TariffProvider):
         entity = states.get(self.price_entity)
         if entity is None:
             if self.price_entity:
-                _LOGGER.warning("TariffProvider: entity %s not found in states, using fallback price inf", self.price_entity)
+                _LOGGER.warning(
+                    "TariffProvider: entity %s not found in states, using fallback price inf",
+                    self.price_entity,
+                )
             return TariffInfo(
                 current_price=float("inf"),
                 feed_in_tariff=feed_in_tariff,
@@ -115,7 +125,11 @@ class GenericTariffProvider(TariffProvider):
         raw_state = str(entity.get("state", ""))
         parsed_price = _parse_price(raw_state)
         if parsed_price is None:
-            _LOGGER.warning("TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf", self.price_entity, raw_state)
+            _LOGGER.warning(
+                "TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf",
+                self.price_entity,
+                raw_state,
+            )
             current_price = float("inf")
         else:
             current_price = parsed_price
@@ -135,7 +149,10 @@ class GenericTariffProvider(TariffProvider):
 
         _LOGGER.debug(
             "GenericTariff: entity=%s raw_state=%s -> price=%s windows=%d",
-            self.price_entity, raw_state, current_price, len(windows),
+            self.price_entity,
+            raw_state,
+            current_price,
+            len(windows),
         )
         return TariffInfo(
             current_price=current_price,
@@ -149,6 +166,7 @@ class GenericTariffProvider(TariffProvider):
 # ---------------------------------------------------------------------------
 # TibberProvider
 # ---------------------------------------------------------------------------
+
 
 class TibberProvider(TariffProvider):
     """Reads Tibber price data.
@@ -170,7 +188,10 @@ class TibberProvider(TariffProvider):
     ) -> TariffInfo:
         entity = states.get(self.price_entity)
         if entity is None:
-            _LOGGER.warning("TariffProvider: entity %s not found in states, using fallback price inf", self.price_entity)
+            _LOGGER.warning(
+                "TariffProvider: entity %s not found in states, using fallback price inf",
+                self.price_entity,
+            )
             return TariffInfo(
                 current_price=float("inf"),
                 feed_in_tariff=feed_in_tariff,
@@ -181,7 +202,11 @@ class TibberProvider(TariffProvider):
         raw_state = str(entity.get("state", ""))
         parsed_price = _parse_price(raw_state)
         if parsed_price is None:
-            _LOGGER.warning("TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf", self.price_entity, raw_state)
+            _LOGGER.warning(
+                "TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf",
+                self.price_entity,
+                raw_state,
+            )
             current_price = float("inf")
         else:
             current_price = parsed_price
@@ -194,7 +219,9 @@ class TibberProvider(TariffProvider):
                 start = _parse_dt(entry["startsAt"])
                 end = start + timedelta(hours=1)
                 price = float(entry["total"])
-                today_windows.append(_make_window(start, end, price, cheap_price_threshold))
+                today_windows.append(
+                    _make_window(start, end, price, cheap_price_threshold)
+                )
             except (KeyError, ValueError, TypeError):
                 pass
         for entry in attributes.get("tomorrow", []):
@@ -202,14 +229,19 @@ class TibberProvider(TariffProvider):
                 start = _parse_dt(entry["startsAt"])
                 end = start + timedelta(hours=1)
                 price = float(entry["total"])
-                tomorrow_windows.append(_make_window(start, end, price, cheap_price_threshold))
+                tomorrow_windows.append(
+                    _make_window(start, end, price, cheap_price_threshold)
+                )
             except (KeyError, ValueError, TypeError):
                 pass
 
         windows = today_windows + tomorrow_windows
         _LOGGER.debug(
             "Tibber: entity=%s price=%.4f windows_today=%d windows_tomorrow=%d",
-            self.price_entity, current_price, len(today_windows), len(tomorrow_windows),
+            self.price_entity,
+            current_price,
+            len(today_windows),
+            len(tomorrow_windows),
         )
         return TariffInfo(
             current_price=current_price,
@@ -223,6 +255,7 @@ class TibberProvider(TariffProvider):
 # ---------------------------------------------------------------------------
 # AwattarProvider
 # ---------------------------------------------------------------------------
+
 
 class AwattarProvider(TariffProvider):
     """Reads aWATTar spot prices.
@@ -247,7 +280,10 @@ class AwattarProvider(TariffProvider):
     ) -> TariffInfo:
         entity = states.get(self.price_entity)
         if entity is None:
-            _LOGGER.warning("TariffProvider: entity %s not found in states, using fallback price inf", self.price_entity)
+            _LOGGER.warning(
+                "TariffProvider: entity %s not found in states, using fallback price inf",
+                self.price_entity,
+            )
             return TariffInfo(
                 current_price=float("inf"),
                 feed_in_tariff=feed_in_tariff,
@@ -258,7 +294,11 @@ class AwattarProvider(TariffProvider):
         raw_state = str(entity.get("state", ""))
         parsed_price = _parse_price(raw_state)
         if parsed_price is None:
-            _LOGGER.warning("TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf", self.price_entity, raw_state)
+            _LOGGER.warning(
+                "TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf",
+                self.price_entity,
+                raw_state,
+            )
             current_price = float("inf")
         else:
             # State is in cents; convert to EUR
@@ -272,13 +312,18 @@ class AwattarProvider(TariffProvider):
                 start = _parse_dt(entry["start_time"])
                 end = _parse_dt(entry["end_time"])
                 price_eur = float(entry["price_ct_per_kwh"]) / 100.0
-                windows.append(_make_window(start, end, price_eur, cheap_price_threshold))
+                windows.append(
+                    _make_window(start, end, price_eur, cheap_price_threshold)
+                )
             except (KeyError, ValueError, TypeError):
                 pass
 
         _LOGGER.debug(
             "Awattar: entity=%s raw_state=%s -> price=%.4f windows=%d",
-            self.price_entity, raw_state, current_price, len(windows),
+            self.price_entity,
+            raw_state,
+            current_price,
+            len(windows),
         )
         return TariffInfo(
             current_price=current_price,
@@ -292,6 +337,7 @@ class AwattarProvider(TariffProvider):
 # ---------------------------------------------------------------------------
 # NordpoolProvider
 # ---------------------------------------------------------------------------
+
 
 class NordpoolProvider(TariffProvider):
     """Reads Nordpool spot prices.
@@ -323,7 +369,10 @@ class NordpoolProvider(TariffProvider):
     ) -> TariffInfo:
         entity = states.get(self.price_entity)
         if entity is None:
-            _LOGGER.warning("TariffProvider: entity %s not found in states, using fallback price inf", self.price_entity)
+            _LOGGER.warning(
+                "TariffProvider: entity %s not found in states, using fallback price inf",
+                self.price_entity,
+            )
             return TariffInfo(
                 current_price=float("inf"),
                 feed_in_tariff=feed_in_tariff,
@@ -334,7 +383,11 @@ class NordpoolProvider(TariffProvider):
         raw_state = str(entity.get("state", ""))
         parsed_price = _parse_price(raw_state)
         if parsed_price is None:
-            _LOGGER.warning("TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf", self.price_entity, raw_state)
+            _LOGGER.warning(
+                "TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf",
+                self.price_entity,
+                raw_state,
+            )
             current_price = float("inf")
         else:
             current_price = parsed_price
@@ -358,13 +411,18 @@ class NordpoolProvider(TariffProvider):
                 try:
                     start = midnight + timedelta(hours=hour_idx)
                     end = start + timedelta(hours=1)
-                    windows.append(_make_window(start, end, float(price), cheap_price_threshold))
+                    windows.append(
+                        _make_window(start, end, float(price), cheap_price_threshold)
+                    )
                 except (ValueError, TypeError):
                     pass
 
         _LOGGER.debug(
             "Nordpool: entity=%s raw_state=%s -> price=%.4f windows=%d",
-            self.price_entity, raw_state, current_price, len(windows),
+            self.price_entity,
+            raw_state,
+            current_price,
+            len(windows),
         )
         return TariffInfo(
             current_price=current_price,
@@ -378,6 +436,7 @@ class NordpoolProvider(TariffProvider):
 # ---------------------------------------------------------------------------
 # OctopusProvider
 # ---------------------------------------------------------------------------
+
 
 class OctopusProvider(TariffProvider):
     """Reads Octopus Energy tariff data.
@@ -398,7 +457,10 @@ class OctopusProvider(TariffProvider):
     ) -> TariffInfo:
         entity = states.get(self.price_entity)
         if entity is None:
-            _LOGGER.warning("TariffProvider: entity %s not found in states, using fallback price inf", self.price_entity)
+            _LOGGER.warning(
+                "TariffProvider: entity %s not found in states, using fallback price inf",
+                self.price_entity,
+            )
             return TariffInfo(
                 current_price=float("inf"),
                 feed_in_tariff=feed_in_tariff,
@@ -409,7 +471,11 @@ class OctopusProvider(TariffProvider):
         raw_state = str(entity.get("state", ""))
         parsed_price = _parse_price(raw_state)
         if parsed_price is None:
-            _LOGGER.warning("TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf", self.price_entity, raw_state)
+            _LOGGER.warning(
+                "TariffProvider: entity %s state is unavailable/unknown ('%s'), using fallback price inf",
+                self.price_entity,
+                raw_state,
+            )
             current_price = float("inf")
         else:
             current_price = parsed_price
@@ -433,7 +499,10 @@ class OctopusProvider(TariffProvider):
 
         _LOGGER.debug(
             "Octopus: entity=%s raw_state=%s -> price=%.4f windows=%d",
-            self.price_entity, raw_state, current_price, len(windows),
+            self.price_entity,
+            raw_state,
+            current_price,
+            len(windows),
         )
         return TariffInfo(
             current_price=current_price,
@@ -447,6 +516,7 @@ class OctopusProvider(TariffProvider):
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def create_tariff_provider(
     provider_type: str,

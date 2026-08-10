@@ -6,36 +6,38 @@ The tariff integration enables the optimizer to run appliances during cheap elec
 
 ## Supported Providers
 
-| Provider | HA Integration Required |
-|----------|------------------------|
-| **None** | — Solar excess control only |
-| **Tibber** | [Tibber integration](https://www.home-assistant.io/integrations/tibber/) |
-| **Awattar** | [Awattar integration](https://github.com/mampfes/hacs_awattar) |
-| **Nordpool** | [Nordpool integration](https://github.com/custom-components/nordpool) |
+| Provider           | HA Integration Required                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| **None**           | — Solar excess control only                                                                |
+| **Tibber**         | [Tibber integration](https://www.home-assistant.io/integrations/tibber/)                   |
+| **Awattar**        | [Awattar integration](https://github.com/mampfes/hacs_awattar)                             |
+| **Nordpool**       | [Nordpool integration](https://github.com/custom-components/nordpool)                      |
 | **Octopus Energy** | [Octopus Energy integration](https://github.com/BottlecapDave/HomeAssistant-OctopusEnergy) |
-| **Generic sensor** | Any sensor exposing a numeric price in your local currency per kWh |
+| **Generic sensor** | Any sensor exposing a numeric price in your local currency per kWh                         |
 
 ---
 
 ## Configuration Fields
 
-| Field | Description |
-|-------|-------------|
-| **Cheap Price Threshold** | Prices at or below this value trigger "cheap tariff" mode (e.g. `0.10` €/kWh) |
+| Field                              | Description                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| **Cheap Price Threshold**          | Prices at or below this value trigger "cheap tariff" mode (e.g. `0.10` €/kWh)        |
 | **Battery Charge Price Threshold** | Prices at or below this value allow grid charging of the battery (e.g. `0.08` €/kWh) |
-| **Feed-In Tariff** | Fixed revenue per kWh exported to grid (e.g. `0.07` €/kWh) |
-| **Feed-In Tariff Sensor** | Alternative: a sensor that provides a dynamic feed-in tariff |
+| **Feed-In Tariff**                 | Fixed revenue per kWh exported to grid (e.g. `0.07` €/kWh)                           |
+| **Feed-In Tariff Sensor**          | Alternative: a sensor that provides a dynamic feed-in tariff                         |
 
 ---
 
 ## How Tariff Data Is Used
 
 ### Cheap Tariff Charging
+
 When the current price is below the **Cheap Price Threshold**, the optimizer can run appliances even without solar excess. This is useful for running the dishwasher or topping up the EV battery at off-peak rates overnight.
 
 Each appliance can be configured to participate in cheap tariff windows or not.
 
 ### Opportunity Cost
+
 The integration calculates the net value of using solar power vs. exporting it:
 
 ```
@@ -47,7 +49,9 @@ If `net_savings_per_kwh` is high (e.g. buying at 0.30, selling at 0.07 → 0.23 
 If feed-in tariff is high (e.g. guaranteed 0.20 €/kWh export), the optimizer may prefer to export over running low-priority appliances.
 
 ### Planning
+
 The 24-hour planner uses future tariff windows to schedule appliances optimally:
+
 - Identifies the cheapest hours for must-run tasks (EV charging deadline)
 - Reserves solar excess hours for high-priority appliances
 - Avoids running appliances during expensive peak periods

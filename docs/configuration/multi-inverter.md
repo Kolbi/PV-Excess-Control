@@ -54,6 +54,7 @@ template:
 ```
 
 In PV Excess Control sensor mapping:
+
 - PV Power: `sensor.combined_pv_power`
 - Import/Export: `sensor.fronius_smart_meter_power`
 

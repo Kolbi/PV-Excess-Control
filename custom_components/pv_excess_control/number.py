@@ -1,4 +1,5 @@
 """Number platform for PV Excess Control."""
+
 from __future__ import annotations
 
 import logging
@@ -37,10 +38,18 @@ async def async_setup_entry(
     # Per-appliance number entities: priority, min/max daily runtime
     subentries = getattr(config_entry, "subentries", {})
     for subentry_id, subentry in subentries.items():
-        appliance_name = subentry.data.get(CONF_APPLIANCE_NAME, f"Appliance {subentry_id}")
-        entities.append(AppliancePriorityNumber(coordinator, subentry_id, appliance_name))
-        entities.append(ApplianceMinDailyRuntimeNumber(coordinator, subentry_id, appliance_name))
-        entities.append(ApplianceMaxDailyRuntimeNumber(coordinator, subentry_id, appliance_name))
+        appliance_name = subentry.data.get(
+            CONF_APPLIANCE_NAME, f"Appliance {subentry_id}"
+        )
+        entities.append(
+            AppliancePriorityNumber(coordinator, subentry_id, appliance_name)
+        )
+        entities.append(
+            ApplianceMinDailyRuntimeNumber(coordinator, subentry_id, appliance_name)
+        )
+        entities.append(
+            ApplianceMaxDailyRuntimeNumber(coordinator, subentry_id, appliance_name)
+        )
 
     async_add_entities(entities)
 
@@ -79,9 +88,7 @@ class AppliancePriorityNumber(CoordinatorEntity[PvExcessCoordinator], NumberEnti
 
     @property
     def native_value(self) -> float:
-        return float(
-            self.coordinator.appliance_priorities.get(self._appliance_id, 500)
-        )
+        return float(self.coordinator.appliance_priorities.get(self._appliance_id, 500))
 
     async def async_set_native_value(self, value: float) -> None:
         self.coordinator.appliance_priorities[self._appliance_id] = int(value)
@@ -98,11 +105,16 @@ class AppliancePriorityNumber(CoordinatorEntity[PvExcessCoordinator], NumberEnti
         except Exception:
             # async_update_subentry may not exist in older HA versions;
             # runtime override still works until restart
-            _LOGGER.debug("Could not persist priority for %s (HA version may not support subentry updates)", self._appliance_id)
+            _LOGGER.debug(
+                "Could not persist priority for %s (HA version may not support subentry updates)",
+                self._appliance_id,
+            )
         self.async_write_ha_state()
 
 
-class ApplianceMinDailyRuntimeNumber(CoordinatorEntity[PvExcessCoordinator], NumberEntity):
+class ApplianceMinDailyRuntimeNumber(
+    CoordinatorEntity[PvExcessCoordinator], NumberEntity
+):
     """Per-appliance minimum daily runtime (minutes).
 
     0 means "disabled" (no minimum). Writes persist to the subentry so
@@ -188,7 +200,9 @@ class ApplianceMinDailyRuntimeNumber(CoordinatorEntity[PvExcessCoordinator], Num
             )
 
 
-class ApplianceMaxDailyRuntimeNumber(CoordinatorEntity[PvExcessCoordinator], NumberEntity):
+class ApplianceMaxDailyRuntimeNumber(
+    CoordinatorEntity[PvExcessCoordinator], NumberEntity
+):
     """Per-appliance maximum daily runtime (minutes).
 
     0 means "disabled" (no maximum). Writes persist to the subentry so
@@ -240,7 +254,9 @@ class ApplianceMaxDailyRuntimeNumber(CoordinatorEntity[PvExcessCoordinator], Num
             min_effective = self._effective_min()
             if min_effective is not None and new_value < min_effective:
                 # Lower the sibling (min) to match the new max before writing self.
-                self.coordinator.appliance_min_daily_runtime[self._appliance_id] = new_value
+                self.coordinator.appliance_min_daily_runtime[self._appliance_id] = (
+                    new_value
+                )
                 await self._persist_min_to_subentry(new_value)
         self.coordinator.appliance_max_daily_runtime[self._appliance_id] = new_value
         await self._persist_to_subentry(new_value)

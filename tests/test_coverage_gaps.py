@@ -6,9 +6,10 @@ Covers edge cases not already tested in module-specific test files:
 3. Controller: unknown entity domain in apply_decisions
 4. Notifications: rate limit boundary (exactly at the limit)
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -48,10 +49,12 @@ from custom_components.pv_excess_control.planner import Planner
 
 def _dt(hour: int, minute: int = 0) -> datetime:
     """Create a UTC datetime on 2026-03-23 at the given hour:minute."""
-    return datetime(2026, 3, 23, hour, minute, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 23, hour, minute, 0, tzinfo=UTC)
 
 
-def _make_tariff_window(start_hour: int, end_hour: int, price: float, is_cheap: bool = False) -> TariffWindow:
+def _make_tariff_window(
+    start_hour: int, end_hour: int, price: float, is_cheap: bool = False
+) -> TariffWindow:
     return TariffWindow(
         start=_dt(start_hour),
         end=_dt(end_hour),
@@ -107,7 +110,9 @@ def _make_hass(states_map: dict | None = None) -> MagicMock:
     return hass
 
 
-def _make_notification_manager(settings: dict | None = None) -> tuple[MagicMock, NotificationManager]:
+def _make_notification_manager(
+    settings: dict | None = None,
+) -> tuple[MagicMock, NotificationManager]:
     hass = MagicMock()
     hass.services = MagicMock()
     hass.services.async_call = AsyncMock()
@@ -280,8 +285,15 @@ class TestEnergyProviderEdgeCases:
                 "state": "0.25",
                 "attributes": {
                     "price_windows": [
-                        {"start": "bad_date", "end": "also_bad", "price": 0.25},  # invalid dates
-                        {"start": "2026-03-23T10:00:00+00:00", "end": "2026-03-23T11:00:00+00:00"},  # missing price
+                        {
+                            "start": "bad_date",
+                            "end": "also_bad",
+                            "price": 0.25,
+                        },  # invalid dates
+                        {
+                            "start": "2026-03-23T10:00:00+00:00",
+                            "end": "2026-03-23T11:00:00+00:00",
+                        },  # missing price
                         None,  # None entry
                     ]
                 },
@@ -312,14 +324,17 @@ class TestEnergyProviderEdgeCases:
     def test_tibber_malformed_entries_skipped(self):
         """Tibber entries with missing keys are silently skipped."""
         provider = TibberProvider("sensor.tibber")
-        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.tibber": {
                 "state": "0.15",
                 "attributes": {
                     "today": [
                         {"total": 0.15},  # missing "startsAt"
-                        {"startsAt": now.isoformat(), "total": "not_a_number"},  # bad total
+                        {
+                            "startsAt": now.isoformat(),
+                            "total": "not_a_number",
+                        },  # bad total
                         {"startsAt": now.isoformat(), "total": 0.12},  # valid
                     ],
                     "tomorrow": [],
@@ -336,14 +351,17 @@ class TestEnergyProviderEdgeCases:
     def test_awattar_malformed_prices_skipped(self):
         """Awattar entries with missing keys are silently skipped."""
         provider = AwattarProvider("sensor.awattar")
-        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.awattar": {
                 "state": "5.5",
                 "attributes": {
                     "prices": [
                         {"price_ct_per_kwh": 5.5},  # missing start/end times
-                        {"start_time": now.isoformat(), "end_time": "bad"},  # bad end time
+                        {
+                            "start_time": now.isoformat(),
+                            "end_time": "bad",
+                        },  # bad end time
                         {
                             "start_time": now.isoformat(),
                             "end_time": (now + timedelta(hours=1)).isoformat(),
@@ -382,14 +400,18 @@ class TestEnergyProviderEdgeCases:
     def test_octopus_malformed_rates_skipped(self):
         """Octopus entries with missing keys are silently skipped."""
         provider = OctopusProvider("sensor.octopus")
-        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 23, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.octopus": {
                 "state": "0.30",
                 "attributes": {
                     "rates": [
                         {"value_inc_vat": 0.30},  # missing start/end
-                        {"start": now.isoformat(), "end": "garbage", "value_inc_vat": 0.28},  # bad end
+                        {
+                            "start": now.isoformat(),
+                            "end": "garbage",
+                            "value_inc_vat": 0.28,
+                        },  # bad end
                         {
                             "start": now.isoformat(),
                             "end": (now + timedelta(minutes=30)).isoformat(),
@@ -431,10 +453,12 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="media_app",
-            entity_id="media_player.lounge",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="media_app",
+                entity_id="media_player.lounge",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="media_app",
@@ -445,7 +469,7 @@ class TestControllerEdgeCases:
             ),
         ]
 
-        applied = await controller.apply_decisions(decisions, configs)
+        await controller.apply_decisions(decisions, configs)
 
         # Applied tracks that we attempted the state change, but _turn_on does nothing
         # for unknown domains. The decision is still "applied" (logged) but no service called.
@@ -459,10 +483,12 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="auto_1",
-            entity_id="automation.my_auto",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="auto_1",
+                entity_id="automation.my_auto",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="auto_1",
@@ -485,11 +511,13 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="boiler",
-            entity_id="switch.boiler",
-            on_only=True,
-        )]
+        configs = [
+            _make_appliance_config(
+                id="boiler",
+                entity_id="switch.boiler",
+                on_only=True,
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="boiler",
@@ -514,11 +542,15 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            switch_interval=3600,  # 1 hour interval
-        )]
+        configs = [
+            _make_appliance_config(
+                switch_interval=3600,  # 1 hour interval
+            )
+        ]
         # Simulate recent state change
-        controller._last_state_change["appliance_1"] = datetime.now() - timedelta(seconds=10)
+        controller._last_state_change["appliance_1"] = datetime.now() - timedelta(
+            seconds=10
+        )
 
         decisions = [
             ControlDecision(
@@ -544,10 +576,12 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="pool_light",
-            entity_id="light.pool_heater_indicator",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="pool_light",
+                entity_id="light.pool_heater_indicator",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="pool_light",
@@ -573,10 +607,12 @@ class TestControllerEdgeCases:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="water_heater_1",
-            entity_id="water_heater.boiler",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="water_heater_1",
+                entity_id="water_heater.boiler",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="water_heater_1",
@@ -627,8 +663,8 @@ class TestNotificationEdgeCases:
         hass, manager = _make_notification_manager(settings)
 
         # 299 seconds ago = still within 300s rate limit
-        manager._last_sent[NotificationEvent.APPLIANCE_ON] = (
-            datetime.now() - timedelta(seconds=299)
+        manager._last_sent[NotificationEvent.APPLIANCE_ON] = datetime.now() - timedelta(
+            seconds=299
         )
 
         result = await manager.async_notify(NotificationEvent.APPLIANCE_ON, "test")
@@ -643,8 +679,8 @@ class TestNotificationEdgeCases:
         hass, manager = _make_notification_manager(settings)
 
         # 301 seconds ago = past the 300s rate limit
-        manager._last_sent[NotificationEvent.APPLIANCE_ON] = (
-            datetime.now() - timedelta(seconds=301)
+        manager._last_sent[NotificationEvent.APPLIANCE_ON] = datetime.now() - timedelta(
+            seconds=301
         )
 
         result = await manager.async_notify(NotificationEvent.APPLIANCE_ON, "test")
@@ -665,7 +701,9 @@ class TestNotificationEdgeCases:
         await manager.async_notify(NotificationEvent.APPLIANCE_ON, "Appliance on")
 
         # APPLIANCE_OFF should not be rate-limited by the APPLIANCE_ON send
-        result = await manager.async_notify(NotificationEvent.APPLIANCE_OFF, "Appliance off")
+        result = await manager.async_notify(
+            NotificationEvent.APPLIANCE_OFF, "Appliance off"
+        )
 
         assert result is True
         assert hass.services.async_call.await_count == 2
@@ -677,11 +715,15 @@ class TestNotificationEdgeCases:
         hass, manager = _make_notification_manager(settings)
 
         # First send
-        first = await manager.async_notify(NotificationEvent.SENSOR_UNAVAILABLE, "msg 1")
+        first = await manager.async_notify(
+            NotificationEvent.SENSOR_UNAVAILABLE, "msg 1"
+        )
         assert first is True
 
         # Immediately after: rate-limited
-        second = await manager.async_notify(NotificationEvent.SENSOR_UNAVAILABLE, "msg 2")
+        second = await manager.async_notify(
+            NotificationEvent.SENSOR_UNAVAILABLE, "msg 2"
+        )
         assert second is False
 
         # Simulate window expiry
@@ -690,7 +732,9 @@ class TestNotificationEdgeCases:
         )
 
         # Should now be allowed
-        third = await manager.async_notify(NotificationEvent.SENSOR_UNAVAILABLE, "msg 3")
+        third = await manager.async_notify(
+            NotificationEvent.SENSOR_UNAVAILABLE, "msg 3"
+        )
         assert third is True
         assert hass.services.async_call.await_count == 2  # first + third
 
@@ -702,7 +746,9 @@ class TestNotificationEdgeCases:
 
         assert NotificationEvent.DAILY_SUMMARY not in manager._last_sent
 
-        result = await manager.async_notify(NotificationEvent.DAILY_SUMMARY, "Daily summary")
+        result = await manager.async_notify(
+            NotificationEvent.DAILY_SUMMARY, "Daily summary"
+        )
 
         assert result is True
         assert NotificationEvent.DAILY_SUMMARY in manager._last_sent

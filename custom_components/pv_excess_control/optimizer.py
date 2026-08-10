@@ -7,6 +7,7 @@ Runs 5 phases per cycle:
   Phase 3:   SHED - Reduce/turn off lowest-priority appliances when excess is negative
   Phase 4:   BATTERY DISCHARGE PROTECTION - Limit battery discharge for big consumers
 """
+
 from __future__ import annotations
 
 import logging
@@ -113,7 +114,9 @@ class Optimizer:
             "Optimizer start: %d appliances, avg_excess=%s, current_excess=%s",
             len(appliances),
             f"{avg_excess:.0f}W" if avg_excess is not None else "unavailable",
-            f"{power_state.excess_power:.0f}W" if power_state.excess_power is not None else "unavailable",
+            f"{power_state.excess_power:.0f}W"
+            if power_state.excess_power is not None
+            else "unavailable",
         )
 
         # Sort appliances by (helper_only, priority, id):
@@ -125,7 +128,9 @@ class Optimizer:
         # evaluate AFTER their dependents so the helper-only short-circuit
         # in _apply_safety_rules can find dependent decisions in the
         # in-progress decisions list.
-        sorted_appliances = sorted(appliances, key=lambda a: (a.helper_only, a.priority, a.id))
+        sorted_appliances = sorted(
+            appliances, key=lambda a: (a.helper_only, a.priority, a.id)
+        )
 
         # If ASSESS produced no trustworthy excess, take the safety-only
         # path: run safety checks and Phase 4, skip Phases 2/2.5/3.
@@ -151,7 +156,11 @@ class Optimizer:
             if app.averaging_window is not None and app.averaging_window > 0:
                 # Calculate how many history entries fit in the custom window
                 entries_needed = max(1, int(app.averaging_window / controller_interval))
-                recent = power_history[-entries_needed:] if len(power_history) >= entries_needed else power_history
+                recent = (
+                    power_history[-entries_needed:]
+                    if len(power_history) >= entries_needed
+                    else power_history
+                )
                 per_app_avg = self._calculate_average_excess(recent)
                 if per_app_avg is not None:
                     self._appliance_avg_excess[app.id] = per_app_avg
@@ -177,31 +186,45 @@ class Optimizer:
             state = state_by_id.get(appliance.id)
             if state is None:
                 # No state found for this appliance - skip with IDLE
-                decisions.append(ControlDecision(
-                    appliance_id=appliance.id,
-                    action=Action.IDLE,
-                    target_current=None,
-                    reason="No state data available",
-                    overrides_plan=False,
-                ))
+                decisions.append(
+                    ControlDecision(
+                        appliance_id=appliance.id,
+                        action=Action.IDLE,
+                        target_current=None,
+                        reason="No state data available",
+                        overrides_plan=False,
+                    )
+                )
                 continue
 
             # Use per-appliance averaged excess if configured, adjusted by prior consumption
             if appliance.id in self._appliance_avg_excess:
-                app_avg_budget = self._appliance_avg_excess[appliance.id] - total_consumed
+                app_avg_budget = (
+                    self._appliance_avg_excess[appliance.id] - total_consumed
+                )
             else:
                 app_avg_budget = avg_budget
 
             decision, power_consumed = self._allocate_appliance(
-                appliance, state, app_avg_budget, instant_budget, plan, tariff,
+                appliance,
+                state,
+                app_avg_budget,
+                instant_budget,
+                plan,
+                tariff,
                 decisions=decisions,
                 state_by_id=state_by_id,
             )
             decisions.append(decision)
             _LOGGER.debug(
                 "  Allocate %s (p=%d, %sW): avg=%.0fW inst=%.0fW -> %s (%s)",
-                appliance.name, appliance.priority, appliance.nominal_power,
-                avg_budget, instant_budget, decision.action, decision.reason,
+                appliance.name,
+                appliance.priority,
+                appliance.nominal_power,
+                avg_budget,
+                instant_budget,
+                decision.action,
+                decision.reason,
             )
             avg_budget -= power_consumed
             instant_budget -= power_consumed
@@ -220,19 +243,26 @@ class Optimizer:
         # threaded through and returned.
         if self.enable_preemption:
             avg_budget, instant_budget = self._preempt(
-                decisions, sorted_appliances, state_by_id,
-                avg_budget, instant_budget,
+                decisions,
+                sorted_appliances,
+                state_by_id,
+                avg_budget,
+                instant_budget,
             )
 
         # Phase 3: SHED — reads the instantaneous budget (physical reality).
         instant_budget = self._shed(
-            decisions, sorted_appliances, state_by_id, instant_budget,
+            decisions,
+            sorted_appliances,
+            state_by_id,
+            instant_budget,
             force_shed=force_charge,
         )
 
         # Phase 4: BATTERY DISCHARGE PROTECTION
         battery_action = self._battery_discharge_protection(
-            decisions, sorted_appliances,
+            decisions,
+            sorted_appliances,
             battery_soc=power_state.battery_soc,
             min_battery_soc=min_battery_soc,
             force_charge=force_charge,
@@ -244,7 +274,9 @@ class Optimizer:
             battery_discharge_action=battery_action,
         )
 
-    def _calculate_average_excess(self, power_history: list[PowerState]) -> float | None:
+    def _calculate_average_excess(
+        self, power_history: list[PowerState]
+    ) -> float | None:
         """Calculate the average excess power from the history window.
 
         Returns ``None`` when fewer than ``self._min_good_samples``
@@ -269,25 +301,33 @@ class Optimizer:
     def _plan_says_on(self, appliance_id: str, plan: Plan) -> bool:
         """Check if the plan has an ON entry for this appliance in the current time window."""
         from datetime import datetime
+
         # Use HA timezone if configured, otherwise fall back to system local timezone.
         now = datetime.now(self._tz) if self._tz else datetime.now().astimezone()
         for entry in plan.entries:
             if entry.appliance_id != appliance_id:
                 continue
-            if entry.action in (Action.ON, Action.SET_CURRENT):
-                if entry.window:
-                    window_start = entry.window.start
-                    window_end = entry.window.end
-                    try:
-                        if window_start <= now <= window_end:
-                            return True
-                    except TypeError:
-                        # Mixed naive/aware — compare as naive
-                        now_naive = now.replace(tzinfo=None)
-                        start_naive = window_start.replace(tzinfo=None) if window_start.tzinfo else window_start
-                        end_naive = window_end.replace(tzinfo=None) if window_end.tzinfo else window_end
-                        if start_naive <= now_naive <= end_naive:
-                            return True
+            if entry.action in (Action.ON, Action.SET_CURRENT) and entry.window:
+                window_start = entry.window.start
+                window_end = entry.window.end
+                try:
+                    if window_start <= now <= window_end:
+                        return True
+                except TypeError:
+                    # Mixed naive/aware — compare as naive
+                    now_naive = now.replace(tzinfo=None)
+                    start_naive = (
+                        window_start.replace(tzinfo=None)
+                        if window_start.tzinfo
+                        else window_start
+                    )
+                    end_naive = (
+                        window_end.replace(tzinfo=None)
+                        if window_end.tzinfo
+                        else window_end
+                    )
+                    if start_naive <= now_naive <= end_naive:
+                        return True
         return False
 
     def _has_running_dependent(
@@ -361,9 +401,13 @@ class Optimizer:
             and state.runtime_today >= appliance.max_daily_runtime
         ):
             if appliance.on_only:
-                _LOGGER.info("Max daily runtime overrides on_only for %s", appliance.name)
+                _LOGGER.info(
+                    "Max daily runtime overrides on_only for %s", appliance.name
+                )
             if appliance.override_active:
-                _LOGGER.info("Max daily runtime overrides manual override for %s", appliance.name)
+                _LOGGER.info(
+                    "Max daily runtime overrides manual override for %s", appliance.name
+                )
             return (
                 ControlDecision(
                     appliance_id=appliance.id,
@@ -403,8 +447,13 @@ class Optimizer:
                 if state.is_on:
                     if state.current_power > 0:
                         current_power = state.current_power
-                    elif state.current_amperage is not None and state.current_amperage > 0:
-                        current_power = state.current_amperage * self.grid_voltage * phases
+                    elif (
+                        state.current_amperage is not None
+                        and state.current_amperage > 0
+                    ):
+                        current_power = (
+                            state.current_amperage * self.grid_voltage * phases
+                        )
                     else:
                         current_power = appliance.nominal_power
                     target_power = appliance.max_current * self.grid_voltage * phases
@@ -474,9 +523,8 @@ class Optimizer:
                     appliance_id=appliance.id,
                     action=action,
                     target_current=None,
-                    reason="EV not confirmed connected (sensor: %s)" % (
-                        "unavailable" if state.ev_connected is None else "disconnected"
-                    ),
+                    reason="EV not confirmed connected (sensor: %s)"
+                    % ("unavailable" if state.ev_connected is None else "disconnected"),
                     overrides_plan=False,
                     bypasses_cooldown=True,
                 ),
@@ -485,9 +533,11 @@ class Optimizer:
 
         # EV SoC target check: stop charging when target reached
         # Placed before on_only so that EV SoC target is respected even for on_only appliances
-        if (appliance.ev_target_soc is not None
-                and state.ev_soc is not None
-                and state.ev_soc >= appliance.ev_target_soc):
+        if (
+            appliance.ev_target_soc is not None
+            and state.ev_soc is not None
+            and state.ev_soc >= appliance.ev_target_soc
+        ):
             action = Action.OFF if state.is_on else Action.IDLE
             return (
                 ControlDecision(
@@ -528,7 +578,9 @@ class Optimizer:
                 action = Action.OFF if state.is_on else Action.IDLE
                 return (
                     ControlDecision(
-                        appliance_id=appliance.id, action=action, target_current=None,
+                        appliance_id=appliance.id,
+                        action=action,
+                        target_current=None,
                         reason=f"Dependency '{appliance.requires_appliance}' unavailable (disabled or removed)",
                         overrides_plan=False,
                     ),
@@ -538,15 +590,24 @@ class Optimizer:
         # Time window check: restrict appliance to specific operating hours
         if appliance.start_after is not None or appliance.end_before is not None:
             from datetime import datetime
-            current_time = datetime.now(self._tz).time() if self._tz else datetime.now().time()
-            if not self._is_within_time_window(current_time, appliance.start_after, appliance.end_before):
+
+            current_time = (
+                datetime.now(self._tz).time() if self._tz else datetime.now().time()
+            )
+            if not self._is_within_time_window(
+                current_time, appliance.start_after, appliance.end_before
+            ):
                 action = Action.OFF if state.is_on else Action.IDLE
                 # Build a descriptive reason
                 window_parts: list[str] = []
                 if appliance.start_after is not None:
-                    window_parts.append(f"after {appliance.start_after.strftime('%H:%M')}")
+                    window_parts.append(
+                        f"after {appliance.start_after.strftime('%H:%M')}"
+                    )
                 if appliance.end_before is not None:
-                    window_parts.append(f"before {appliance.end_before.strftime('%H:%M')}")
+                    window_parts.append(
+                        f"before {appliance.end_before.strftime('%H:%M')}"
+                    )
                 window_desc = " and ".join(window_parts)
                 return (
                     ControlDecision(
@@ -588,16 +649,19 @@ class Optimizer:
         for appliance in sorted_appliances:
             state = state_by_id.get(appliance.id)
             if state is None:
-                decisions.append(ControlDecision(
-                    appliance_id=appliance.id,
-                    action=Action.IDLE,
-                    target_current=None,
-                    reason="No state data available",
-                    overrides_plan=False,
-                ))
+                decisions.append(
+                    ControlDecision(
+                        appliance_id=appliance.id,
+                        action=Action.IDLE,
+                        target_current=None,
+                        reason="No state data available",
+                        overrides_plan=False,
+                    )
+                )
                 continue
             safety_result = self._apply_safety_rules(
-                appliance, state,
+                appliance,
+                state,
                 decisions=decisions,
                 state_by_id=state_by_id,
             )
@@ -608,16 +672,19 @@ class Optimizer:
                 # Emit a hold-ON decision so Phase 4 can see this big consumer
                 # and apply battery discharge limits. Without a decision entry
                 # _battery_discharge_protection would not detect it as active.
-                decisions.append(ControlDecision(
-                    appliance_id=appliance.id,
-                    action=Action.ON,
-                    target_current=None,
-                    reason="Excess unavailable - holding state",
-                    overrides_plan=False,
-                ))
+                decisions.append(
+                    ControlDecision(
+                        appliance_id=appliance.id,
+                        action=Action.ON,
+                        target_current=None,
+                        reason="Excess unavailable - holding state",
+                        overrides_plan=False,
+                    )
+                )
 
         battery_action = self._battery_discharge_protection(
-            decisions, sorted_appliances,
+            decisions,
+            sorted_appliances,
             battery_soc=power_state.battery_soc,
             min_battery_soc=min_battery_soc,
             force_charge=force_charge,
@@ -626,7 +693,8 @@ class Optimizer:
 
         _LOGGER.info(
             "Optimizer safety-only path: %d decisions, battery_action=%s",
-            len(decisions), battery_action,
+            len(decisions),
+            battery_action,
         )
         return OptimizerResult(
             decisions=decisions,
@@ -668,7 +736,8 @@ class Optimizer:
         # so the safety-only optimizer path (triggered when ASSESS returns
         # None) can reuse them.
         safety_result = self._apply_safety_rules(
-            appliance, state,
+            appliance,
+            state,
             decisions=decisions if decisions is not None else [],
             state_by_id=state_by_id if state_by_id is not None else {},
         )
@@ -709,10 +778,11 @@ class Optimizer:
                 # early-return so a configured override keeps the appliance
                 # running through transient negative-budget cycles instead of
                 # falling back to a SHED-eligible "staying on" decision.
-                override_amps = self._cheap_window_target_amps(appliance, tariff, phases)
-                override_active = (
-                    override_amps is not None
-                    and override_amps > max(target_amps, appliance.min_current)
+                override_amps = self._cheap_window_target_amps(
+                    appliance, tariff, phases
+                )
+                override_active = override_amps is not None and override_amps > max(
+                    target_amps, appliance.min_current
                 )
 
                 if target_amps < appliance.min_current and not override_active:
@@ -734,7 +804,9 @@ class Optimizer:
                         0.0,
                     )
 
-                target_amps = max(appliance.min_current, min(target_amps, appliance.max_current))
+                target_amps = max(
+                    appliance.min_current, min(target_amps, appliance.max_current)
+                )
                 if override_active:
                     target_amps = override_amps  # already capped by helper
                 power_at_target = target_amps * self.grid_voltage * phases
@@ -808,8 +880,14 @@ class Optimizer:
                 # override target instead of min_current. Otherwise default to
                 # min_current as before.
                 phases = max(appliance.phases, 1)
-                override_amps = self._cheap_window_target_amps(appliance, tariff, phases)
-                target_amps = override_amps if override_amps is not None else appliance.min_current
+                override_amps = self._cheap_window_target_amps(
+                    appliance, tariff, phases
+                )
+                target_amps = (
+                    override_amps
+                    if override_amps is not None
+                    else appliance.min_current
+                )
                 return (
                     ControlDecision(
                         appliance_id=appliance.id,
@@ -840,12 +918,20 @@ class Optimizer:
         # --- Dynamic current appliances (currently OFF) ---
         if appliance.dynamic_current:
             return self._allocate_dynamic_current(
-                appliance, state, avg_budget, tariff, plan,
+                appliance,
+                state,
+                avg_budget,
+                tariff,
+                plan,
             )
 
         # --- Standard (on/off) appliances (currently OFF) ---
         return self._allocate_standard(
-            appliance, state, avg_budget, tariff, plan,
+            appliance,
+            state,
+            avg_budget,
+            tariff,
+            plan,
         )
 
     def _allocate_standard(
@@ -887,7 +973,11 @@ class Optimizer:
             threshold = max(appliance.nominal_power * 0.1, 50.0)
         else:
             # Normal threshold
-            on_buf = appliance.on_threshold if appliance.on_threshold is not None else DEFAULT_ON_THRESHOLD
+            on_buf = (
+                appliance.on_threshold
+                if appliance.on_threshold is not None
+                else DEFAULT_ON_THRESHOLD
+            )
             threshold = appliance.nominal_power + on_buf
 
         # Appliance is currently OFF - use computed threshold (plus dependency power if needed)
@@ -902,11 +992,14 @@ class Optimizer:
                 power_consumed = appliance.nominal_power
             # If dependency is OFF, inject a pending decision to turn it ON
             if dep_power > 0:
-                self._pending_dep_decisions[appliance.requires_appliance] = ControlDecision(
-                    appliance_id=appliance.requires_appliance, action=Action.ON,
-                    target_current=None,
-                    reason=f"Started as dependency for {appliance.name}",
-                    overrides_plan=False,
+                self._pending_dep_decisions[appliance.requires_appliance] = (
+                    ControlDecision(
+                        appliance_id=appliance.requires_appliance,
+                        action=Action.ON,
+                        target_current=None,
+                        reason=f"Started as dependency for {appliance.name}",
+                        overrides_plan=False,
+                    )
                 )
                 power_consumed = power_consumed + dep_power
             return (
@@ -924,25 +1017,35 @@ class Optimizer:
         # If not enough excess but tariff is cheap, allow grid to fill the gap.
         # Only deduct the solar portion from the excess budget; the grid portion
         # is intentionally imported and should not make avg_budget negative.
-        if (
-            appliance.allow_grid_supplement
-            and self._is_cheap_for_appliance(tariff, appliance)
+        if appliance.allow_grid_supplement and self._is_cheap_for_appliance(
+            tariff, appliance
         ):
-            max_grid = appliance.max_grid_power if appliance.max_grid_power is not None else appliance.nominal_power
+            max_grid = (
+                appliance.max_grid_power
+                if appliance.max_grid_power is not None
+                else appliance.nominal_power
+            )
             solar_portion = max(avg_budget, 0.0)
             grid_supplement_needed = appliance.nominal_power - solar_portion
             if grid_supplement_needed <= max_grid:
                 # If dependency is OFF, inject a pending decision to turn it ON
                 grid_power_consumed = solar_portion
                 if dep_power > 0:
-                    self._pending_dep_decisions[appliance.requires_appliance] = ControlDecision(
-                        appliance_id=appliance.requires_appliance, action=Action.ON,
-                        target_current=None,
-                        reason=f"Started as dependency for {appliance.name}",
-                        overrides_plan=False,
+                    self._pending_dep_decisions[appliance.requires_appliance] = (
+                        ControlDecision(
+                            appliance_id=appliance.requires_appliance,
+                            action=Action.ON,
+                            target_current=None,
+                            reason=f"Started as dependency for {appliance.name}",
+                            overrides_plan=False,
+                        )
                     )
                     grid_power_consumed = solar_portion + dep_power
-                effective_threshold = appliance.cheap_price_threshold if appliance.cheap_price_threshold is not None else tariff.cheap_price_threshold
+                effective_threshold = (
+                    appliance.cheap_price_threshold
+                    if appliance.cheap_price_threshold is not None
+                    else tariff.cheap_price_threshold
+                )
                 return (
                     ControlDecision(
                         appliance_id=appliance.id,
@@ -965,12 +1068,21 @@ class Optimizer:
             and state.runtime_today < appliance.min_daily_runtime
         ):
             from datetime import datetime
-            current_time = datetime.now(self._tz).time() if self._tz else datetime.now().time()
+
+            current_time = (
+                datetime.now(self._tz).time() if self._tz else datetime.now().time()
+            )
             deadline = appliance.schedule_deadline
-            remaining_runtime = (appliance.min_daily_runtime - state.runtime_today).total_seconds()
+            remaining_runtime = (
+                appliance.min_daily_runtime - state.runtime_today
+            ).total_seconds()
 
             # Calculate time until deadline
-            now_seconds = current_time.hour * 3600 + current_time.minute * 60 + current_time.second
+            now_seconds = (
+                current_time.hour * 3600
+                + current_time.minute * 60
+                + current_time.second
+            )
             deadline_seconds = deadline.hour * 3600 + deadline.minute * 60
             is_overnight = deadline_seconds <= now_seconds
             if is_overnight:
@@ -1043,21 +1155,36 @@ class Optimizer:
             # Plan says ON: allow activation at minimum current with no buffer
             dynamic_buffer = 0.0
         else:
-            dynamic_buffer = appliance.on_threshold if appliance.on_threshold is not None else DEFAULT_DYNAMIC_ON_THRESHOLD
+            dynamic_buffer = (
+                appliance.on_threshold
+                if appliance.on_threshold is not None
+                else DEFAULT_DYNAMIC_ON_THRESHOLD
+            )
 
-        min_watts_needed = appliance.min_current * self.grid_voltage * phases + dynamic_buffer
+        min_watts_needed = (
+            appliance.min_current * self.grid_voltage * phases + dynamic_buffer
+        )
 
         if avg_budget < min_watts_needed:
             # Not enough excess — try grid supplementation if tariff is cheap
-            if (
-                appliance.allow_grid_supplement
-                and self._is_cheap_for_appliance(tariff, appliance)
+            if appliance.allow_grid_supplement and self._is_cheap_for_appliance(
+                tariff, appliance
             ):
-                override_amps = self._cheap_window_target_amps(appliance, tariff, phases)
-                target_amps = override_amps if override_amps is not None else appliance.min_current
+                override_amps = self._cheap_window_target_amps(
+                    appliance, tariff, phases
+                )
+                target_amps = (
+                    override_amps
+                    if override_amps is not None
+                    else appliance.min_current
+                )
                 target_power = target_amps * self.grid_voltage * phases
                 solar_portion = max(avg_budget, 0.0)
-                effective_threshold = appliance.cheap_price_threshold if appliance.cheap_price_threshold is not None else tariff.cheap_price_threshold
+                effective_threshold = (
+                    appliance.cheap_price_threshold
+                    if appliance.cheap_price_threshold is not None
+                    else tariff.cheap_price_threshold
+                )
                 if override_amps is not None:
                     reason = (
                         f"Grid supplement (cheap-window target): {target_amps:.1f}A "
@@ -1088,10 +1215,19 @@ class Optimizer:
                 and state.runtime_today < appliance.min_daily_runtime
             ):
                 from datetime import datetime
-                current_time = datetime.now(self._tz).time() if self._tz else datetime.now().time()
+
+                current_time = (
+                    datetime.now(self._tz).time() if self._tz else datetime.now().time()
+                )
                 deadline = appliance.schedule_deadline
-                remaining_runtime = (appliance.min_daily_runtime - state.runtime_today).total_seconds()
-                now_seconds = current_time.hour * 3600 + current_time.minute * 60 + current_time.second
+                remaining_runtime = (
+                    appliance.min_daily_runtime - state.runtime_today
+                ).total_seconds()
+                now_seconds = (
+                    current_time.hour * 3600
+                    + current_time.minute * 60
+                    + current_time.second
+                )
                 deadline_seconds = deadline.hour * 3600 + deadline.minute * 60
                 is_overnight = deadline_seconds <= now_seconds
                 if is_overnight:
@@ -1138,10 +1274,14 @@ class Optimizer:
         raw_amps = avg_budget / (self.grid_voltage * phases)
         clamped_amps = _step_floor(raw_amps, appliance.current_step)
 
-        natural_target_amps = max(appliance.min_current, min(clamped_amps, appliance.max_current))
+        natural_target_amps = max(
+            appliance.min_current, min(clamped_amps, appliance.max_current)
+        )
 
         override_amps = self._cheap_window_target_amps(appliance, tariff, phases)
-        override_active = override_amps is not None and override_amps > natural_target_amps
+        override_active = (
+            override_amps is not None and override_amps > natural_target_amps
+        )
         target_amps = override_amps if override_active else natural_target_amps
 
         power_consumed = target_amps * self.grid_voltage * phases
@@ -1225,7 +1365,9 @@ class Optimizer:
 
         cap_amps = appliance.max_current
         if appliance.max_grid_power is not None:
-            cap_amps = min(cap_amps, appliance.max_grid_power / (self.grid_voltage * phases))
+            cap_amps = min(
+                cap_amps, appliance.max_grid_power / (self.grid_voltage * phases)
+            )
 
         target_amps = max(appliance.cheap_grid_target_current, appliance.min_current)
         target_amps = min(target_amps, cap_amps)
@@ -1318,13 +1460,20 @@ class Optimizer:
             # Calculate power_needed to start this appliance
             if idle_app.dynamic_current and idle_app.current_entity:
                 phases = max(idle_app.phases, 1)
-                dyn_buf = idle_app.on_threshold if idle_app.on_threshold is not None else DEFAULT_DYNAMIC_ON_THRESHOLD
+                dyn_buf = (
+                    idle_app.on_threshold
+                    if idle_app.on_threshold is not None
+                    else DEFAULT_DYNAMIC_ON_THRESHOLD
+                )
                 power_needed = (
-                    idle_app.min_current * self.grid_voltage * phases
-                    + dyn_buf
+                    idle_app.min_current * self.grid_voltage * phases + dyn_buf
                 )
             else:
-                on_buf = idle_app.on_threshold if idle_app.on_threshold is not None else DEFAULT_ON_THRESHOLD
+                on_buf = (
+                    idle_app.on_threshold
+                    if idle_app.on_threshold is not None
+                    else DEFAULT_ON_THRESHOLD
+                )
                 power_needed = idle_app.nominal_power + on_buf
 
             # Add dependency power if dependency is OFF
@@ -1344,8 +1493,8 @@ class Optimizer:
 
             power_needed += dep_power
 
-            # Collect preemptable ON/SET_CURRENT decisions for lower-priority appliances
-            preemptable: list[tuple[str, ApplianceConfig, float]] = []
+            # Collect preemptible ON/SET_CURRENT decisions for lower-priority appliances
+            preemptible: list[tuple[str, ApplianceConfig, float]] = []
             for decision in decisions:
                 if decision.action not in (Action.ON, Action.SET_CURRENT):
                     continue
@@ -1356,7 +1505,10 @@ class Optimizer:
                 if app.priority <= idle_app.priority:
                     continue
                 # Never preempt the idle candidate's own dependency
-                if idle_app.requires_appliance and app.id == idle_app.requires_appliance:
+                if (
+                    idle_app.requires_appliance
+                    and app.id == idle_app.requires_appliance
+                ):
                     continue
                 # Never preempt on_only
                 if app.on_only:
@@ -1394,16 +1546,16 @@ class Optimizer:
                     if state and state.current_power > 0
                     else app.nominal_power
                 )
-                preemptable.append((app.id, app, freed))
+                preemptible.append((app.id, app, freed))
 
-            # Sort preemptable: highest priority number first (least important first)
-            preemptable.sort(key=lambda item: (-item[1].priority, item[0]))
+            # Sort preemptible: highest priority number first (least important first)
+            preemptible.sort(key=lambda item: (-item[1].priority, item[0]))
 
             # Accumulate freed power until we have enough.
             # Feasibility check uses avg_budget (the conservative turn-on view).
             total_freed = 0.0
             to_preempt: list[tuple[str, ApplianceConfig, float]] = []
-            for p_id, p_app, freed in preemptable:
+            for p_id, p_app, freed in preemptible:
                 to_preempt.append((p_id, p_app, freed))
                 total_freed += freed
                 if avg_budget + total_freed >= power_needed:
@@ -1428,8 +1580,11 @@ class Optimizer:
                 instant_budget += freed
                 _LOGGER.debug(
                     "  Preempt %s (p=%d): freed %.0fW for %s (p=%d)",
-                    p_app.name, p_app.priority, freed,
-                    idle_app.name, idle_app.priority,
+                    p_app.name,
+                    p_app.priority,
+                    freed,
+                    idle_app.name,
+                    idle_app.priority,
                 )
 
             # Replace idle decision with ON or SET_CURRENT. Target_amps is
@@ -1457,7 +1612,7 @@ class Optimizer:
                     appliance_id=idle_id,
                     action=Action.ON,
                     target_current=None,
-                    reason=f"Preemption: started after shedding lower-priority appliances",
+                    reason="Preemption: started after shedding lower-priority appliances",
                     overrides_plan=False,
                 )
             avg_budget -= power_consumed
@@ -1478,7 +1633,9 @@ class Optimizer:
 
             _LOGGER.debug(
                 "  Preempt result: %s ON, avg=%.0fW inst=%.0fW",
-                idle_app.name, avg_budget, instant_budget,
+                idle_app.name,
+                avg_budget,
+                instant_budget,
             )
 
         return avg_budget, instant_budget
@@ -1585,13 +1742,17 @@ class Optimizer:
             # Hard min_runtime constraint: don't shed if minimum not met
             # (bypassed during force_charge to prioritise battery charging)
             state = state_by_id.get(app_id)
-            if (not force_shed
-                    and appliance.min_daily_runtime is not None
-                    and state is not None
-                    and state.runtime_today < appliance.min_daily_runtime):
+            if (
+                not force_shed
+                and appliance.min_daily_runtime is not None
+                and state is not None
+                and state.runtime_today < appliance.min_daily_runtime
+            ):
                 _LOGGER.debug(
                     "  Skipping shed of %s: min_runtime not met (%s < %s)",
-                    appliance.name, state.runtime_today, appliance.min_daily_runtime,
+                    appliance.name,
+                    state.runtime_today,
+                    appliance.min_daily_runtime,
                 )
                 continue
 
@@ -1599,10 +1760,15 @@ class Optimizer:
             current_decision = decisions[idx]
 
             # For dynamic current appliances: try reducing current first
-            if appliance.dynamic_current and current_decision.action in (Action.ON, Action.SET_CURRENT):
+            if appliance.dynamic_current and current_decision.action in (
+                Action.ON,
+                Action.SET_CURRENT,
+            ):
                 state = state_by_id.get(app_id)
                 new_decision, power_freed = self._shed_dynamic_current(
-                    appliance, state, instant_budget,
+                    appliance,
+                    state,
+                    instant_budget,
                 )
                 if new_decision is not None:
                     decisions[idx] = new_decision
@@ -1611,8 +1777,11 @@ class Optimizer:
 
             # Turn off: free the appliance's actual consumption (or nominal as fallback)
             state = state_by_id.get(app_id)
-            freed_power = (state.current_power if state and state.current_power > 0
-                           else appliance.nominal_power)
+            freed_power = (
+                state.current_power
+                if state and state.current_power > 0
+                else appliance.nominal_power
+            )
             decisions[idx] = ControlDecision(
                 appliance_id=app_id,
                 action=Action.OFF,
@@ -1623,7 +1792,9 @@ class Optimizer:
             instant_budget += freed_power
             _LOGGER.debug(
                 "  Shed %s: freed %.0fW, inst=%.0fW",
-                appliance.name, freed_power, instant_budget,
+                appliance.name,
+                freed_power,
+                instant_budget,
             )
 
         return instant_budget
@@ -1648,7 +1819,11 @@ class Optimizer:
         # Current consumption: prefer measured power, then amperage-derived, then nominal
         if state is not None and state.current_power > 0:
             current_power = state.current_power
-        elif state is not None and state.current_amperage is not None and state.current_amperage > 0:
+        elif (
+            state is not None
+            and state.current_amperage is not None
+            and state.current_amperage > 0
+        ):
             current_power = state.current_amperage * self.grid_voltage * phases
         else:
             current_power = appliance.nominal_power
@@ -1710,9 +1885,7 @@ class Optimizer:
         SoC-based protection takes priority. Cheap-tariff overrules big-consumer
         because 0 is the most restrictive value.
         """
-        appliance_by_id: dict[str, ApplianceConfig] = {
-            a.id: a for a in appliances
-        }
+        appliance_by_id: dict[str, ApplianceConfig] = {a.id: a for a in appliances}
 
         # --- SoC-based protection ---
         if (
@@ -1723,7 +1896,8 @@ class Optimizer:
             _LOGGER.info(
                 "Battery SoC %.1f%% is below minimum %.1f%% — shedding appliances "
                 "and blocking discharge",
-                battery_soc, min_battery_soc,
+                battery_soc,
+                min_battery_soc,
             )
             # Shed all non-on_only, non-overridden appliances.
             # Shed big consumers first, then standard appliances.
@@ -1792,7 +1966,8 @@ class Optimizer:
         # any big-consumer override (since 0 is the smallest possible value).
         # Does NOT shed appliances — loads should run on cheap grid.
         grid_supplement_decisions = [
-            d for d in decisions
+            d
+            for d in decisions
             if d.action in (Action.ON, Action.SET_CURRENT)
             and "grid supplement" in d.reason.lower()
         ]
@@ -1851,7 +2026,8 @@ class Optimizer:
             ]
             _LOGGER.debug(
                 "  Battery protection: limiting discharge to %.0fW (active big consumers: %s)",
-                limit_watts, ", ".join(consumer_names),
+                limit_watts,
+                ", ".join(consumer_names),
             )
             return BatteryDischargeAction(
                 should_limit=True,

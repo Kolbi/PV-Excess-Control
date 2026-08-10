@@ -86,7 +86,11 @@ class AnalyticsTracker:
         self._total_savings += max(savings, 0.0)
         _LOGGER.debug(
             "Analytics: %s %.1fW for %ds source=%s savings=%.4f",
-            appliance_id, power_watts, duration_seconds, source, max(savings, 0.0),
+            appliance_id,
+            power_watts,
+            duration_seconds,
+            source,
+            max(savings, 0.0),
         )
 
     def record_solar_production(

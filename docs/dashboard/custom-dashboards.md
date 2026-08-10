@@ -8,30 +8,30 @@ This page documents all entities exposed by PV Excess Control and their attribut
 
 ### System-Level Entities
 
-| Entity | Description |
-|--------|-------------|
-| `sensor.pv_excess_control_excess_power` | Current excess power (W) |
-| `sensor.pv_excess_control_plan_confidence` | Plan confidence score |
+| Entity                                             | Description                       |
+| -------------------------------------------------- | --------------------------------- |
+| `sensor.pv_excess_control_excess_power`            | Current excess power (W)          |
+| `sensor.pv_excess_control_plan_confidence`         | Plan confidence score             |
 | `binary_sensor.pv_excess_control_excess_available` | Whether excess power is available |
-| `switch.pv_excess_control_control_enabled` | Master on/off for the integration |
-| `switch.pv_excess_control_force_charge` | Force battery grid charging |
-| `select.pv_excess_control_battery_strategy` | Battery strategy selector |
+| `switch.pv_excess_control_control_enabled`         | Master on/off for the integration |
+| `switch.pv_excess_control_force_charge`            | Force battery grid charging       |
+| `select.pv_excess_control_battery_strategy`        | Battery strategy selector         |
 
 ### Per-Appliance Entities
 
 For an appliance named "Water Heater" (slug: `water_heater`):
 
-| Entity | Description |
-|--------|-------------|
-| `sensor.pv_excess_control_water_heater_power` | Current power draw (W) |
-| `sensor.pv_excess_control_water_heater_runtime_today` | Runtime today |
-| `sensor.pv_excess_control_water_heater_energy_today` | Energy consumed today (kWh) |
-| `sensor.pv_excess_control_water_heater_activations_today` | Number of times turned on today |
-| `sensor.pv_excess_control_water_heater_status` | Current appliance status |
-| `switch.pv_excess_control_water_heater_enabled` | Enable/disable this appliance |
-| `switch.pv_excess_control_water_heater_override` | Manual override toggle |
-| `binary_sensor.pv_excess_control_water_heater_active` | Whether the appliance is currently running |
-| `number.pv_excess_control_water_heater_priority` | Priority setting (1-1000) |
+| Entity                                                    | Description                                |
+| --------------------------------------------------------- | ------------------------------------------ |
+| `sensor.pv_excess_control_water_heater_power`             | Current power draw (W)                     |
+| `sensor.pv_excess_control_water_heater_runtime_today`     | Runtime today                              |
+| `sensor.pv_excess_control_water_heater_energy_today`      | Energy consumed today (kWh)                |
+| `sensor.pv_excess_control_water_heater_activations_today` | Number of times turned on today            |
+| `sensor.pv_excess_control_water_heater_status`            | Current appliance status                   |
+| `switch.pv_excess_control_water_heater_enabled`           | Enable/disable this appliance              |
+| `switch.pv_excess_control_water_heater_override`          | Manual override toggle                     |
+| `binary_sensor.pv_excess_control_water_heater_active`     | Whether the appliance is currently running |
+| `number.pv_excess_control_water_heater_priority`          | Priority setting (1-1000)                  |
 
 ---
 
@@ -40,21 +40,21 @@ For an appliance named "Water Heater" (slug: `water_heater`):
 The `sensor.pv_excess_control_plan_confidence` entity exposes the planner's
 scheduled actions so dashboard cards can visualize them.
 
-| Attribute | Type | Meaning |
-|---|---|---|
-| `plan_entries` | list | All planned actions for the planning horizon. Each entry is a dict (see below). |
-| `plan_entry_count` | int | Total number of plan entries. |
+| Attribute          | Type | Meaning                                                                         |
+| ------------------ | ---- | ------------------------------------------------------------------------------- |
+| `plan_entries`     | list | All planned actions for the planning horizon. Each entry is a dict (see below). |
+| `plan_entry_count` | int  | Total number of plan entries.                                                   |
 
 Each entry in `plan_entries`:
 
-| Field | Type | Meaning |
-|---|---|---|
-| `appliance_id` | string | Internal appliance ID (ULID). |
-| `appliance_name` | string | Human-readable appliance name (as configured). |
-| `action` | string | Planned action: `on`, `off`, `set_current`, or `idle`. |
-| `reason` | string | Why scheduled: `excess_available`, `cheap_tariff`, `min_runtime`, `deadline`, etc. |
-| `window_start` | ISO datetime | Start of the 15-minute planning window (present when a tariff window is assigned). |
-| `window_end` | ISO datetime | End of the 15-minute planning window. |
+| Field            | Type         | Meaning                                                                            |
+| ---------------- | ------------ | ---------------------------------------------------------------------------------- |
+| `appliance_id`   | string       | Internal appliance ID (ULID).                                                      |
+| `appliance_name` | string       | Human-readable appliance name (as configured).                                     |
+| `action`         | string       | Planned action: `on`, `off`, `set_current`, or `idle`.                             |
+| `reason`         | string       | Why scheduled: `excess_available`, `cheap_tariff`, `min_runtime`, `deadline`, etc. |
+| `window_start`   | ISO datetime | Start of the 15-minute planning window (present when a tariff window is assigned). |
+| `window_end`     | ISO datetime | End of the 15-minute planning window.                                              |
 
 ---
 
@@ -116,16 +116,16 @@ structured attributes that make it easy to build richer Lovelace cards
 without parsing the state string. The state string is meant to be a
 human-readable summary; the attributes give you machine-readable values.
 
-| Attribute | Type | Meaning |
-|---|---|---|
-| `action` | string | Machine-readable decision: `on`, `off`, `set_current`, or `idle`. |
-| `overrides_plan` | bool | `true` when the current decision deviates from the planner's schedule. |
-| `cooldown_seconds_remaining` | int or `null` | Seconds until the next switch is allowed. `null` when no cooldown applies. |
-| `switch_deferred` | bool | `true` when the switch interval prevented applying a state change this cycle. |
-| `headroom_watts` | float or `null` | Watts of headroom before SHED, for already-running appliances. `null` otherwise. |
-| `plan_action` | string or `null` | Planner's scheduled action for the current time window. `null` if no plan or no matching entry. |
-| `plan_window_start` | ISO datetime or `null` | Start of the matching planner window. |
-| `plan_window_end` | ISO datetime or `null` | End of the matching planner window. |
+| Attribute                    | Type                   | Meaning                                                                                         |
+| ---------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `action`                     | string                 | Machine-readable decision: `on`, `off`, `set_current`, or `idle`.                               |
+| `overrides_plan`             | bool                   | `true` when the current decision deviates from the planner's schedule.                          |
+| `cooldown_seconds_remaining` | int or `null`          | Seconds until the next switch is allowed. `null` when no cooldown applies.                      |
+| `switch_deferred`            | bool                   | `true` when the switch interval prevented applying a state change this cycle.                   |
+| `headroom_watts`             | float or `null`        | Watts of headroom before SHED, for already-running appliances. `null` otherwise.                |
+| `plan_action`                | string or `null`       | Planner's scheduled action for the current time window. `null` if no plan or no matching entry. |
+| `plan_window_start`          | ISO datetime or `null` | Start of the matching planner window.                                                           |
+| `plan_window_end`            | ISO datetime or `null` | End of the matching planner window.                                                             |
 
 ### Example: cooldown countdown badge
 
