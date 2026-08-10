@@ -36,7 +36,7 @@ class SensorCombiner:
             raise ValueError("values and weights must have same length")
         total_weight = 0.0
         weighted_sum = 0.0
-        for i, (val, weight) in enumerate(zip(values, weights)):
+        for i, (val, weight) in enumerate(zip(values, weights, strict=True)):
             if val is None:
                 label = labels[i] if labels and i < len(labels) else f"sensor_{i}"
                 _LOGGER.warning("Sensor %s unavailable, skipping in average", label)
