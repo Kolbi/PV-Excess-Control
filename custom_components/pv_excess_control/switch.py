@@ -12,6 +12,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from contextlib import suppress
+
 from .const import (
     CONF_APPLIANCE_NAME,
     CONF_BATTERY_GRID_CHARGE_POWER_W,
@@ -196,15 +198,13 @@ class ApplianceEnabledSwitch(_PvExcessSwitchBase):
         if config and config.entity_id:
             entity_id = config.entity_id
             domain = entity_id.split(".")[0] if "." in entity_id else "switch"
-            try:
+            with suppress(Exception):
                 await self.hass.services.async_call(
                     domain,
                     "turn_off",
                     {"entity_id": entity_id},
                     blocking=True,
                 )
-            except Exception:
-                pass  # Best effort
         self.async_write_ha_state()
 
 
