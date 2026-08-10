@@ -7,6 +7,7 @@ Tests verify that:
 - Validation logic works identically to the main config flow
 - Completing the flow creates an options entry
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -39,7 +40,6 @@ from custom_components.pv_excess_control.const import (
     CONF_PV_POWER,
     CONF_TARIFF_PROVIDER,
     DEFAULT_CONTROLLER_INTERVAL,
-    DEFAULT_GRID_VOLTAGE,
     DEFAULT_PLANNER_INTERVAL,
     DOMAIN,
     BatteryStrategy,
@@ -74,7 +74,9 @@ def _make_config_entry(data: dict[str, Any] | None = None) -> MagicMock:
     return entry
 
 
-def _make_options_flow(entry_data: dict[str, Any] | None = None) -> PvExcessControlOptionsFlow:
+def _make_options_flow(
+    entry_data: dict[str, Any] | None = None,
+) -> PvExcessControlOptionsFlow:
     """Create a PvExcessControlOptionsFlow with a mocked config entry."""
     config_entry = _make_config_entry(entry_data)
     flow = PvExcessControlOptionsFlow()
@@ -138,6 +140,7 @@ class TestOptionsFlowExists:
     def test_options_flow_is_options_flow_subclass(self):
         """PvExcessControlOptionsFlow inherits from OptionsFlow."""
         from homeassistant import config_entries
+
         assert issubclass(PvExcessControlOptionsFlow, config_entries.OptionsFlow)
 
 
@@ -288,9 +291,7 @@ class TestOptionsStepSensors:
         flow = _make_options_flow()
         flow.data[CONF_INVERTER_TYPE] = InverterType.STANDARD
 
-        result = await flow.async_step_sensors(
-            user_input={CONF_PV_POWER: "sensor.pv"}
-        )
+        result = await flow.async_step_sensors(user_input={CONF_PV_POWER: "sensor.pv"})
 
         assert result["type"] == "form"
         assert result["step_id"] == "sensors"
@@ -582,12 +583,14 @@ class TestOptionsStepSettings:
         """Settings step with valid input creates an options entry."""
         flow = _make_options_flow()
         # Populate flow.data with required fields
-        flow.data.update({
-            CONF_INVERTER_TYPE: InverterType.HYBRID,
-            CONF_GRID_VOLTAGE: 230,
-            CONF_PV_POWER: "sensor.pv",
-            CONF_GRID_EXPORT: "sensor.grid_export",
-        })
+        flow.data.update(
+            {
+                CONF_INVERTER_TYPE: InverterType.HYBRID,
+                CONF_GRID_VOLTAGE: 230,
+                CONF_PV_POWER: "sensor.pv",
+                CONF_GRID_EXPORT: "sensor.grid_export",
+            }
+        )
 
         result = await flow.async_step_settings(
             user_input={

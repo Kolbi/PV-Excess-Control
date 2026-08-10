@@ -9,6 +9,7 @@ The tariff optimizer runs appliances during the cheapest electricity hours, even
 The optimizer has two tariff-aware modes:
 
 ### 1. Opportunity Cost
+
 When solar excess is available and multiple appliances compete for it, the optimizer factors in the **opportunity cost** of using power vs. exporting it:
 
 ```
@@ -18,6 +19,7 @@ net_savings_per_kwh = import_price - feed_in_tariff
 If net savings are high (e.g. 0.30 import - 0.07 export = 0.23 €/kWh), the optimizer aggressively self-consumes. If the feed-in tariff is high relative to import prices, low-priority appliances may be skipped in favour of exporting.
 
 ### 2. Cheap Tariff Windows
+
 When the current price is below the **Cheap Price Threshold**, the planner can schedule appliances using grid power. This is useful for:
 
 - Overnight EV charging at off-peak rates

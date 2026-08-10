@@ -59,7 +59,7 @@
     #   - aWATTar:  entity.attributes.prices → field: entry.price
     #   - Generic:  entity.attributes.price_windows → field: entry.price
     #
-    - entity: sensor.YOUR_PRICE_SENSOR                  # <- CHANGE
+    - entity: sensor.YOUR_PRICE_SENSOR # <- CHANGE
       name: Price
       type: column
       yaxis_id: price
@@ -80,11 +80,11 @@
     # ── Appliance 1 ───────────────────────────────────────────────────────
     # Duplicate this block for each appliance. Change name, color, and height.
     - entity: sensor.pv_excess_control_plan_confidence
-      name: My Appliance 1                              # <- CHANGE
+      name: My Appliance 1 # <- CHANGE
       type: line
       curve: stepline
       stroke_width: 3
-      color: '#FF5733'                                   # <- CHANGE color
+      color: "#FF5733" # <- CHANGE color
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
@@ -112,11 +112,11 @@
 
     # ── Appliance 2 ───────────────────────────────────────────────────────
     - entity: sensor.pv_excess_control_plan_confidence
-      name: My Appliance 2                              # <- CHANGE
+      name: My Appliance 2 # <- CHANGE
       type: line
       curve: stepline
       stroke_width: 3
-      color: '#33C4FF'                                   # <- CHANGE color
+      color: "#33C4FF" # <- CHANGE color
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
@@ -161,14 +161,13 @@
       min: 0
       apex_config:
         title:
-          text: €/kWh                                   # <- CHANGE currency
+          text: €/kWh # <- CHANGE currency
         forceNiceScale: true
     - id: schedules
       show: false
       opposite: true
       max: 1
       min: 0
-
 
 # ---------- TOMORROW ----------
 
@@ -182,7 +181,7 @@
     offset: +1d
   series:
     # ── Electricity price columns ──────────────────────────────────────────
-    - entity: sensor.YOUR_PRICE_SENSOR                  # <- CHANGE
+    - entity: sensor.YOUR_PRICE_SENSOR # <- CHANGE
       name: Price
       type: column
       yaxis_id: price
@@ -203,11 +202,11 @@
 
     # ── Appliance 1 ───────────────────────────────────────────────────────
     - entity: sensor.pv_excess_control_plan_confidence
-      name: My Appliance 1                              # <- CHANGE
+      name: My Appliance 1 # <- CHANGE
       type: line
       curve: stepline
       stroke_width: 3
-      color: '#FF5733'                                   # <- CHANGE color
+      color: "#FF5733" # <- CHANGE color
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
@@ -236,11 +235,11 @@
 
     # ── Appliance 2 ───────────────────────────────────────────────────────
     - entity: sensor.pv_excess_control_plan_confidence
-      name: My Appliance 2                              # <- CHANGE
+      name: My Appliance 2 # <- CHANGE
       type: line
       curve: stepline
       stroke_width: 3
-      color: '#33C4FF'                                   # <- CHANGE color
+      color: "#33C4FF" # <- CHANGE color
       yaxis_id: schedules
       data_generator: |
         const entries = entity.attributes.plan_entries || [];
@@ -286,7 +285,7 @@
       min: 0
       apex_config:
         title:
-          text: €/kWh                                   # <- CHANGE currency
+          text: €/kWh # <- CHANGE currency
         forceNiceScale: true
     - id: schedules
       show: false

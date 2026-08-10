@@ -3,12 +3,12 @@
 Uses standard unittest.mock (no pytest-homeassistant-custom-component).
 Validates entity metadata, value reading, and graceful handling of missing data.
 """
+
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -52,7 +52,7 @@ def _make_power_state(excess_power: float = 500.0) -> PowerState:
         battery_soc=80.0,
         battery_power=None,
         ev_soc=None,
-        timestamp=datetime.now(tz=timezone.utc),
+        timestamp=datetime.now(tz=UTC),
     )
 
 
@@ -76,19 +76,21 @@ def _make_appliance_state(
 
 def _make_plan(confidence: float = 0.85) -> Plan:
     return Plan(
-        created_at=datetime.now(tz=timezone.utc),
+        created_at=datetime.now(tz=UTC),
         horizon=timedelta(hours=24),
         entries=[],
         battery_target=BatteryTarget(
             target_soc=100.0,
-            target_time=datetime.now(tz=timezone.utc) + timedelta(hours=8),
+            target_time=datetime.now(tz=UTC) + timedelta(hours=8),
             strategy=BatteryStrategy.BALANCED,
         ),
         confidence=confidence,
     )
 
 
-def _make_control_decision(appliance_id: str = "sub_1", reason: str = "excess available") -> ControlDecision:
+def _make_control_decision(
+    appliance_id: str = "sub_1", reason: str = "excess available"
+) -> ControlDecision:
     return ControlDecision(
         appliance_id=appliance_id,
         action=Action.ON,
@@ -207,7 +209,9 @@ class TestSensorSetup:
 
         await async_setup_entry(hass, config_entry, capture)
 
-        appliance_names = [e._attr_name for e in added_entities if "Solar Charger" in e._attr_name]
+        appliance_names = [
+            e._attr_name for e in added_entities if "Solar Charger" in e._attr_name
+        ]
         assert len(appliance_names) == 5
         assert "Solar Charger Power" in appliance_names
         assert "Solar Charger Runtime Today" in appliance_names
@@ -400,7 +404,9 @@ class TestApplianceSensors:
 
     def test_appliance_status_sensor_value(self):
         """Status sensor shows decision reason for the appliance."""
-        decision = _make_control_decision(appliance_id="sub_1", reason="excess available")
+        decision = _make_control_decision(
+            appliance_id="sub_1", reason="excess available"
+        )
         data = _make_coordinator_data(control_decisions=[decision])
         coord = _make_coordinator(data=data)
 
@@ -438,8 +444,12 @@ class TestApplianceSensors:
         """Appliance sensors return None when coordinator data is None."""
         coord = _make_coordinator(data=None)
 
-        for sensor_cls in [PvAppliancePowerSensor, PvApplianceRuntimeSensor,
-                           PvApplianceEnergySensor, PvApplianceStatusSensor]:
+        for sensor_cls in [
+            PvAppliancePowerSensor,
+            PvApplianceRuntimeSensor,
+            PvApplianceEnergySensor,
+            PvApplianceStatusSensor,
+        ]:
             sensor = sensor_cls(coord, "sub_1", "Heat Pump")
             assert sensor.native_value is None
 

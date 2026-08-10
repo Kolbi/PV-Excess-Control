@@ -2,7 +2,7 @@
 
 # PV Excess Control
 
-*Hinweis: Diese Übersetzung kann der englischen Version hinterherhinken — die [englische README](README.md) ist die maßgebliche Version.*
+_Hinweis: Diese Übersetzung kann der englischen Version hinterherhinken — die [englische README](README.md) ist die maßgebliche Version._
 
 **Eine umfassende Home Assistant-Integration für intelligente Solarüberschuss-Optimierung und günstige Netztarif-Verwaltung.**
 
@@ -23,6 +23,7 @@ Diese Integration ist Open Source, weil ich daran glaube, der Community, die Hom
 ## Funktionen
 
 ### Optimierung & Planung
+
 - **Smarte Planung** - 24-Stunden vorausschauender Optimierungsalgorithmus mit wetterabhängiger Vorplanung und konfigurierbarem Planeinfluss.
 - **Prioritätsbasierte Gerätesteuerung** - Verwaltung mehrerer Geräte mit konfigurierbaren Prioritäten (1-1000).
 - **Opportunitätskosten** - Berücksichtigung der entgangenen Einspeisevergütung
@@ -30,6 +31,7 @@ Diese Integration ist Open Source, weil ich daran glaube, der Community, die Hom
 - **Min/Max Laufzeit & Zeitfenster** - Zeitbeschränkungen für einzelne Geräte
 
 ### E-Auto & Batteriemanagement
+
 - **SoC-basiertes E-Auto Laden** - Berücksichtigt den Batteriestand des E-Autos und den Verbindungsstatus
 - **Zeitplan-Fristen** - Setzen von Bedingungen wie bspw. "E-Auto muss bis 7 Uhr geladen sein".
 - **Dynamische Stromsteuerung** - Variable Ampere-Regelung für E-Auto-Ladegeräte und Wallboxen (6-32 A).
@@ -38,11 +40,13 @@ Diese Integration ist Open Source, weil ich daran glaube, der Community, die Hom
 - **Batterieentladeschutz** - Begrenzt die Entladerate, wenn große Verbraucher laufen.
 
 ### Stromtarife & -netz
+
 - **Tarif-Integration** - Unterstützung für Tibber, Awattar, Nordpool, Octopus Energy und generische Preissensoren.
 - **Einspeiselimit-Management** - Absorbieren potenziell abgeregelter Leistung möglich, z.B. wenn Einspeisebegrenzungen gelten.
 - **Netzsupplementierung** - Möglichkeit, eine bestimmte Menge an Netzstrom zu erlauben, um Geräte zusätzlich zu supplementieren.
 
 ### UI, Analyse & Integrationen
+
 - **Solarprognose-Integration** - Solcast, Forecast.Solar und generische Prognosesensoren.
 - **Umfangreiche Dashboard-Beispiele** — Erstelle dein eigenes Dashboard mit Mushroom, ApexCharts und anderen Community-Karten. [Vollständige YAML-Beispiele enthalten](docs/dashboard-examples.md).
 - **Eigenverbrauchs-Analyse** - Verfolgen von Einsparungen, Eigenverbrauchsquote, Energiestatistiken.

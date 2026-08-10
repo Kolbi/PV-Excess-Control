@@ -22,11 +22,11 @@ This must be a valid HA notify service. The integration calls it using the stand
 
 The following notification toggles are configurable via the integration's Settings step:
 
-| Toggle | Config Field | Default | When it fires |
-|--------|-------------|---------|--------------|
-| **Appliance On** | `notify_appliance_on` | Off | Every time an appliance is switched on |
-| **Appliance Off** | `notify_appliance_off` | Off | Every time an appliance is switched off |
-| **Daily Summary** | `notify_daily_summary` | Off | Once daily at midnight (00:00) with energy stats and savings |
+| Toggle            | Config Field           | Default | When it fires                                                |
+| ----------------- | ---------------------- | ------- | ------------------------------------------------------------ |
+| **Appliance On**  | `notify_appliance_on`  | Off     | Every time an appliance is switched on                       |
+| **Appliance Off** | `notify_appliance_off` | Off     | Every time an appliance is switched off                      |
+| **Daily Summary** | `notify_daily_summary` | Off     | Once daily at midnight (00:00) with energy stats and savings |
 
 ---
 

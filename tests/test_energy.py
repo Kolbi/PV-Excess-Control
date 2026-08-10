@@ -1,7 +1,8 @@
 """Tests for the energy module (tariff providers). TDD."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
@@ -14,15 +15,18 @@ from custom_components.pv_excess_control.energy import (
     TibberProvider,
     create_tariff_provider,
 )
-from custom_components.pv_excess_control.const import TariffProvider as TariffProviderEnum
+from custom_components.pv_excess_control.const import (
+    TariffProvider as TariffProviderEnum,
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _utcnow() -> datetime:
-    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
 
 
 def _hour_later(dt: datetime) -> datetime:
@@ -32,6 +36,7 @@ def _hour_later(dt: datetime) -> datetime:
 # ---------------------------------------------------------------------------
 # TestGenericProvider
 # ---------------------------------------------------------------------------
+
 
 class TestGenericProvider:
     def test_reads_current_price_from_state(self):
@@ -88,8 +93,16 @@ class TestGenericProvider:
                 "state": "0.30",
                 "attributes": {
                     "price_windows": [
-                        {"start": now.isoformat(), "end": later.isoformat(), "price": 0.30},
-                        {"start": later.isoformat(), "end": _hour_later(later).isoformat(), "price": 0.10},
+                        {
+                            "start": now.isoformat(),
+                            "end": later.isoformat(),
+                            "price": 0.30,
+                        },
+                        {
+                            "start": later.isoformat(),
+                            "end": _hour_later(later).isoformat(),
+                            "price": 0.10,
+                        },
                     ]
                 },
             }
@@ -98,7 +111,7 @@ class TestGenericProvider:
         assert len(info.windows) == 2
         assert info.windows[0].price == pytest.approx(0.30)
         assert info.windows[1].price == pytest.approx(0.10)
-        assert info.windows[1].is_cheap is True   # 0.10 < threshold 0.20
+        assert info.windows[1].is_cheap is True  # 0.10 < threshold 0.20
         assert info.windows[0].is_cheap is False  # 0.30 > threshold 0.20
 
     def test_is_abstract_base(self):
@@ -131,6 +144,7 @@ class TestGenericProvider:
 # ---------------------------------------------------------------------------
 # TestTibberProvider
 # ---------------------------------------------------------------------------
+
 
 class TestTibberProvider:
     def test_reads_price_and_windows(self):
@@ -233,6 +247,7 @@ class TestTibberProvider:
 # TestAwattarProvider
 # ---------------------------------------------------------------------------
 
+
 class TestAwattarProvider:
     def test_reads_prices_in_cents(self):
         """AwattarProvider converts cents to euros."""
@@ -314,6 +329,7 @@ class TestAwattarProvider:
 # TestNordpoolProvider
 # ---------------------------------------------------------------------------
 
+
 class TestNordpoolProvider:
     def test_reads_prices(self):
         """NordpoolProvider reads current and hourly prices."""
@@ -358,7 +374,7 @@ class TestNordpoolProvider:
             },
         }
         info = provider.get_tariff_info(states, 0.10, 0.05, 0.0)
-        assert info.windows[0].is_cheap is True   # 0.05 < 0.10
+        assert info.windows[0].is_cheap is True  # 0.05 < 0.10
         assert info.windows[1].is_cheap is False  # 0.15 > 0.10
 
     def test_tomorrow_windows_included(self):
@@ -408,6 +424,7 @@ class TestNordpoolProvider:
 # TestOctopusProvider
 # ---------------------------------------------------------------------------
 
+
 class TestOctopusProvider:
     def test_reads_rates(self):
         """OctopusProvider reads tariff rates."""
@@ -439,8 +456,16 @@ class TestOctopusProvider:
                 "state": "0.20",
                 "attributes": {
                     "rates": [
-                        {"start": now.isoformat(), "end": _hour_later(now).isoformat(), "value_inc_vat": 0.20},
-                        {"start": _hour_later(now).isoformat(), "end": _hour_later(_hour_later(now)).isoformat(), "value_inc_vat": 0.08},
+                        {
+                            "start": now.isoformat(),
+                            "end": _hour_later(now).isoformat(),
+                            "value_inc_vat": 0.20,
+                        },
+                        {
+                            "start": _hour_later(now).isoformat(),
+                            "end": _hour_later(_hour_later(now)).isoformat(),
+                            "value_inc_vat": 0.08,
+                        },
                     ],
                 },
             },
@@ -448,7 +473,7 @@ class TestOctopusProvider:
         info = provider.get_tariff_info(states, 0.15, 0.05, 0.0)
         assert len(info.windows) == 2
         assert info.windows[0].is_cheap is False  # 0.20 > 0.15
-        assert info.windows[1].is_cheap is True   # 0.08 < 0.15
+        assert info.windows[1].is_cheap is True  # 0.08 < 0.15
 
     def test_no_rates_gives_empty_windows(self):
         """If no rates attribute, windows is empty."""
@@ -482,9 +507,11 @@ class TestOctopusProvider:
 # TestCreateTariffProvider (factory)
 # ---------------------------------------------------------------------------
 
+
 class TestCreateTariffProvider:
     def test_create_generic(self):
         from custom_components.pv_excess_control.energy import GenericTariffProvider
+
         p = create_tariff_provider(TariffProviderEnum.GENERIC, "sensor.price")
         assert isinstance(p, GenericTariffProvider)
 

@@ -1,24 +1,16 @@
 """Shared test fixtures for PV Excess Control tests."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from custom_components.pv_excess_control.models import (
-    Action,
     ApplianceConfig,
-    ApplianceState,
-    BatteryDischargeAction,
-    BatteryStrategy,
-    BatteryTarget,
-    ControlDecision,
-    OptimizerResult,
-    Plan,
     PowerState,
     TariffInfo,
-    TariffWindow,
 )
 
 
@@ -112,19 +104,27 @@ def mock_inverter_controller():
 @pytest.fixture
 def mock_tariff_at():
     """Build a TariffInfo at a given price and threshold."""
-    def _build(current_price, battery_charge_price_threshold=0.02, cheap_price_threshold=0.05, feed_in_tariff=0.08):
+
+    def _build(
+        current_price,
+        battery_charge_price_threshold=0.02,
+        cheap_price_threshold=0.05,
+        feed_in_tariff=0.08,
+    ):
         return TariffInfo(
             current_price=current_price,
             feed_in_tariff=feed_in_tariff,
             cheap_price_threshold=cheap_price_threshold,
             battery_charge_price_threshold=battery_charge_price_threshold,
         )
+
     return _build
 
 
 @pytest.fixture
 def mock_power_state_with_soc():
     """Build a PowerState with the given battery_soc."""
+
     def _build(battery_soc):
         return PowerState(
             pv_production=0.0,
@@ -135,8 +135,9 @@ def mock_power_state_with_soc():
             battery_soc=battery_soc,
             battery_power=None,
             ev_soc=None,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
+
     return _build
 
 
@@ -151,7 +152,6 @@ def coordinator_factory():
         CONF_GRID_EXPORT,
         CONF_GRID_VOLTAGE,
         CONF_LOAD_POWER,
-        CONF_PLAN_INFLUENCE,
         CONF_PLANNER_INTERVAL,
         CONF_PV_POWER,
         CONF_TARIFF_PROVIDER,
@@ -238,7 +238,9 @@ def coordinator_factory():
         coord.appliance_states = {}
         coord.control_decisions = []
         coord.battery_discharge_action = None
-        coord._planner_interval = entry.data.get(CONF_PLANNER_INTERVAL, DEFAULT_PLANNER_INTERVAL)
+        coord._planner_interval = entry.data.get(
+            CONF_PLANNER_INTERVAL, DEFAULT_PLANNER_INTERVAL
+        )
         coord._planner_counter = 0
         coord._startup_time = datetime.now()
         coord._enabled = True
@@ -265,7 +267,9 @@ def coordinator_factory():
 
         coord.analytics = AnalyticsTracker(feed_in_tariff=0.0, normal_import_price=0.25)
         coord.notifications = NotificationManager(
-            hass, notification_settings=None, notification_service=None,
+            hass,
+            notification_settings=None,
+            notification_service=None,
         )
 
         # Grid charge state machine fields
@@ -291,17 +295,22 @@ def freeze_time(monkeypatch):
     """Patches the coordinator module's `_time.monotonic` so the state machine
     sees controllable elapsed time. Returns an object with .tick(seconds: float).
     Use as `with freeze_time() as ft:` then `ft.tick(seconds=N)`."""
+
     class _FT:
         def __init__(self):
             self._t = 1_000_000.0
+
         def __enter__(self):
             monkeypatch.setattr(
                 "custom_components.pv_excess_control.coordinator._time.monotonic",
                 lambda: self._t,
             )
             return self
+
         def __exit__(self, *args):
             return None
+
         def tick(self, seconds: float):
             self._t += seconds
+
     return _FT

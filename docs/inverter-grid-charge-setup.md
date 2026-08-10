@@ -13,7 +13,7 @@ control cycle (default 30 s) and disengages when:
 - the current price rises above your `battery_charge_price_threshold`, or
 - the battery state of charge reaches your `battery_target_soc`.
 
-The integration tracks whether *it* engaged the inverter, so a manual UI
+The integration tracks whether _it_ engaged the inverter, so a manual UI
 change between cycles is silently re-asserted only if conditions still
 match. The state survives Home Assistant restarts.
 
@@ -21,11 +21,11 @@ match. The state survives Home Assistant restarts.
 
 Three optional triplets:
 
-| Triplet     | Required? | Examples                                              |
-|-------------|-----------|-------------------------------------------------------|
-| Enable cmd  | yes       | `input_select.set_sg_battery_forced_charge_discharge_cmd` + `"Forced charge"` / `"Stop (default)"` |
-| Mode        | optional  | `input_select.set_sg_ems_mode` + `"Forced mode"` / `"Self-consumption mode (default)"` |
-| Power       | optional  | `input_number.set_sg_forced_charge_discharge_power`  |
+| Triplet    | Required? | Examples                                                                                           |
+| ---------- | --------- | -------------------------------------------------------------------------------------------------- |
+| Enable cmd | yes       | `input_select.set_sg_battery_forced_charge_discharge_cmd` + `"Forced charge"` / `"Stop (default)"` |
+| Mode       | optional  | `input_select.set_sg_ems_mode` + `"Forced mode"` / `"Self-consumption mode (default)"`             |
+| Power      | optional  | `input_number.set_sg_forced_charge_discharge_power`                                                |
 
 Engage order: mode → power → enable.
 Disengage order: enable (stop) → mode (revert). Power is left untouched on
@@ -42,16 +42,16 @@ Supported entity domains for **power**: `input_number`, `number`.
 
 ### Sungrow SHx with mkaiser Modbus integration
 
-| Field | Value |
-|---|---|
-| Enable entity | `input_select.set_sg_battery_forced_charge_discharge_cmd` |
-| Engage value | `Forced charge` |
-| Disengage value | `Stop (default)` |
-| Mode entity | `input_select.set_sg_ems_mode` |
-| Mode engage value | `Forced mode` |
-| Mode disengage value | `Self-consumption mode (default)` |
-| Power entity | `input_number.set_sg_forced_charge_discharge_power` |
-| Forced grid-charge power | up to 5000 W (inverter cap on SH5RT-V112 / SH10RT-V112) |
+| Field                    | Value                                                     |
+| ------------------------ | --------------------------------------------------------- |
+| Enable entity            | `input_select.set_sg_battery_forced_charge_discharge_cmd` |
+| Engage value             | `Forced charge`                                           |
+| Disengage value          | `Stop (default)`                                          |
+| Mode entity              | `input_select.set_sg_ems_mode`                            |
+| Mode engage value        | `Forced mode`                                             |
+| Mode disengage value     | `Self-consumption mode (default)`                         |
+| Power entity             | `input_number.set_sg_forced_charge_discharge_power`       |
+| Forced grid-charge power | up to 5000 W (inverter cap on SH5RT-V112 / SH10RT-V112)   |
 
 Tip: ensure `input_number.set_sg_max_soc` is at or above `battery_target_soc`
 in the integration; otherwise the inverter stops accepting forced charge
@@ -61,11 +61,11 @@ before the integration's gate trips.
 
 Some integrations expose a simple toggle entity. Wire only the enable triplet:
 
-| Field | Value |
-|---|---|
-| Enable entity | `switch.battery_force_charge` |
-| Engage value | `on` |
-| Disengage value | `off` |
+| Field           | Value                         |
+| --------------- | ----------------------------- |
+| Enable entity   | `switch.battery_force_charge` |
+| Engage value    | `on`                          |
+| Disengage value | `off`                         |
 
 No mode, no power. Power is controlled by whatever the switch represents.
 
@@ -74,20 +74,20 @@ No mode, no power. Power is controlled by whatever the switch represents.
 Likely shape (untested by the maintainer; please open an issue with your
 working values):
 
-| Field | Value |
-|---|---|
-| Enable entity | `select.solis_storage_mode` |
-| Engage value | `Force Charge` |
-| Disengage value | `Self-Use` |
+| Field           | Value                       |
+| --------------- | --------------------------- |
+| Enable entity   | `select.solis_storage_mode` |
+| Engage value    | `Force Charge`              |
+| Disengage value | `Self-Use`                  |
 
 ### Deye / SunSynk — placeholder, contributions welcome
 
-| Field | Value |
-|---|---|
-| Enable entity | `select.sunsynk_priority_mode` |
-| Engage value | `Battery First` |
-| Disengage value | `Load First` |
-| Power entity | `number.sunsynk_grid_charge_power` |
+| Field           | Value                              |
+| --------------- | ---------------------------------- |
+| Enable entity   | `select.sunsynk_priority_mode`     |
+| Engage value    | `Battery First`                    |
+| Disengage value | `Load First`                       |
+| Power entity    | `number.sunsynk_grid_charge_power` |
 
 ### Generic Modbus via input_number + automation
 
@@ -105,7 +105,7 @@ your `modbus.write_register` calls.
   the inverter's accepted range (e.g. Sungrow 0–5000W).
 - **mkaiser helper-vs-Modbus distinction:** The mkaiser integration writes
   Modbus only via its bundled automations. Always point this integration
-  at the `input_select` / `input_number` *helpers*, never directly at
+  at the `input_select` / `input_number` _helpers_, never directly at
   Modbus.
 - **Test your wiring before relying on it:** Flip the manual `force_charge`
   switch in HA. Watch the inverter's mode change in the UI and verify

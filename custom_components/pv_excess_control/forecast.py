@@ -3,6 +3,7 @@
 Supports Solcast, Forecast.Solar, and generic sensor providers.
 Designed to be HA-agnostic: accepts raw state dicts, not HA objects.
 """
+
 from __future__ import annotations
 
 import logging
@@ -49,14 +50,19 @@ class GenericForecastProvider(ForecastProvider):
     def get_forecast(self, states: dict[str, dict]) -> ForecastData:
         entity_state = states.get(self.forecast_entity)
         if entity_state is None:
-            _LOGGER.warning("ForecastProvider: entity %s state is unavailable/unknown", self.forecast_entity)
+            _LOGGER.warning(
+                "ForecastProvider: entity %s state is unavailable/unknown",
+                self.forecast_entity,
+            )
             return ForecastData(remaining_today_kwh=0.0)
 
         raw_state = entity_state.get("state", "unavailable")
         remaining = _safe_float(raw_state)
         _LOGGER.debug(
             "GenericForecast: entity=%s raw_state=%s -> remaining=%.2f kWh",
-            self.forecast_entity, raw_state, remaining,
+            self.forecast_entity,
+            raw_state,
+            remaining,
         )
         return ForecastData(remaining_today_kwh=remaining)
 
@@ -77,7 +83,10 @@ class SolcastProvider(ForecastProvider):
     def get_forecast(self, states: dict[str, dict]) -> ForecastData:
         entity_state = states.get(self.forecast_entity)
         if entity_state is None:
-            _LOGGER.warning("ForecastProvider: entity %s state is unavailable/unknown", self.forecast_entity)
+            _LOGGER.warning(
+                "ForecastProvider: entity %s state is unavailable/unknown",
+                self.forecast_entity,
+            )
             return ForecastData(remaining_today_kwh=0.0)
 
         state_val = entity_state.get("state", "unavailable")
@@ -99,7 +108,9 @@ class SolcastProvider(ForecastProvider):
             )
         tomorrow_raw = attributes.get("forecast_tomorrow")
         try:
-            tomorrow_kwh: float | None = float(tomorrow_raw) if tomorrow_raw is not None else None
+            tomorrow_kwh: float | None = (
+                float(tomorrow_raw) if tomorrow_raw is not None else None
+            )
         except (ValueError, TypeError):
             _LOGGER.warning("Solcast: forecast_tomorrow not numeric: %r", tomorrow_raw)
             tomorrow_kwh = None
@@ -108,7 +119,10 @@ class SolcastProvider(ForecastProvider):
 
         _LOGGER.debug(
             "Solcast: entity=%s remaining=%.2f kWh hourly_slots=%d tomorrow=%.2f kWh",
-            self.forecast_entity, remaining, len(hourly_breakdown), tomorrow_kwh or 0,
+            self.forecast_entity,
+            remaining,
+            len(hourly_breakdown),
+            tomorrow_kwh or 0,
         )
         return ForecastData(
             remaining_today_kwh=remaining,
@@ -140,8 +154,13 @@ class SolcastProvider(ForecastProvider):
                 continue
 
             # Truncate to the calendar hour
-            hour_key = (dt.year, dt.month, dt.day, dt.hour,
-                        dt.tzinfo.utcoffset(dt) if dt.tzinfo else None)
+            hour_key = (
+                dt.year,
+                dt.month,
+                dt.day,
+                dt.hour,
+                dt.tzinfo.utcoffset(dt) if dt.tzinfo else None,
+            )
             hour_dt = dt.replace(minute=0, second=0, microsecond=0)
 
             if hour_key not in hour_start:
@@ -162,12 +181,14 @@ class SolcastProvider(ForecastProvider):
             kwh = hour_kwh[hour_key]
             # Average watts = average kW * 1000
             avg_kw = hour_kw_sum[hour_key] / hour_count[hour_key]
-            result.append(HourlyForecast(
-                start=start_dt,
-                end=end_dt,
-                expected_kwh=kwh,
-                expected_watts=avg_kw * 1000.0,
-            ))
+            result.append(
+                HourlyForecast(
+                    start=start_dt,
+                    end=end_dt,
+                    expected_kwh=kwh,
+                    expected_watts=avg_kw * 1000.0,
+                )
+            )
 
         return result
 
@@ -187,7 +208,10 @@ class ForecastSolarProvider(ForecastProvider):
     def get_forecast(self, states: dict[str, dict]) -> ForecastData:
         entity_state = states.get(self.forecast_entity)
         if entity_state is None:
-            _LOGGER.warning("ForecastProvider: entity %s state is unavailable/unknown", self.forecast_entity)
+            _LOGGER.warning(
+                "ForecastProvider: entity %s state is unavailable/unknown",
+                self.forecast_entity,
+            )
             return ForecastData(remaining_today_kwh=0.0)
 
         state_val = entity_state.get("state", "unavailable")
@@ -204,10 +228,11 @@ class ForecastSolarProvider(ForecastProvider):
         wh_days = attributes.get("wh_days", {})
         if wh_days:
             from datetime import date, timedelta as td
+
             tomorrow_date = date.today() + td(days=1)
             for key, wh_value in wh_days.items():
                 try:
-                    if hasattr(key, 'date'):
+                    if hasattr(key, "date"):
                         key_date = key.date()
                     else:
                         key_date = date.fromisoformat(str(key))
@@ -219,7 +244,9 @@ class ForecastSolarProvider(ForecastProvider):
 
         _LOGGER.debug(
             "ForecastSolar: entity=%s remaining=%.2f kWh watts_entries=%d tomorrow=%.2f kWh",
-            self.forecast_entity, remaining, len(watts_dict) if watts_dict else 0,
+            self.forecast_entity,
+            remaining,
+            len(watts_dict) if watts_dict else 0,
             tomorrow_total_kwh or 0,
         )
         return ForecastData(
@@ -242,12 +269,14 @@ class ForecastSolarProvider(ForecastProvider):
             watts = float(watts_value)
             kwh = watts / 1000.0  # average watts over 1 hour -> kWh
 
-            result.append(HourlyForecast(
-                start=dt,
-                end=dt + timedelta(hours=1),
-                expected_kwh=kwh,
-                expected_watts=watts,
-            ))
+            result.append(
+                HourlyForecast(
+                    start=dt,
+                    end=dt + timedelta(hours=1),
+                    expected_kwh=kwh,
+                    expected_watts=watts,
+                )
+            )
 
         # Sort chronologically
         result.sort(key=lambda hf: hf.start)
@@ -268,7 +297,9 @@ def _parse_iso(value) -> datetime | None:
         return None
 
 
-def create_forecast_provider(provider_type: str, forecast_entity: str) -> ForecastProvider:
+def create_forecast_provider(
+    provider_type: str, forecast_entity: str
+) -> ForecastProvider:
     """Create a forecast provider by type string.
 
     Args:

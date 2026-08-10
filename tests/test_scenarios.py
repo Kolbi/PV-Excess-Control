@@ -4,28 +4,21 @@ Each test sets up realistic conditions and verifies the system makes correct
 decisions, exercising the complete optimizer flow:
   sensors -> optimizer -> decisions
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
-import pytest
 
 from custom_components.pv_excess_control.models import (
     Action,
-    ApplianceConfig,
-    ApplianceState,
-    BatteryDischargeAction,
     BatteryStrategy,
     BatteryTarget,
-    ControlDecision,
     Plan,
     PlanEntry,
     PlanReason,
-    PowerState,
-    TariffInfo,
     TariffWindow,
 )
-from custom_components.pv_excess_control.optimizer import Optimizer
 
 # Import shared helpers from the unit-level test module
 from tests.test_optimizer import (
@@ -42,6 +35,7 @@ from tests.test_optimizer import (
 # ---------------------------------------------------------------------------
 # Scenario 1: Sunny Day
 # ---------------------------------------------------------------------------
+
 
 class TestSunnyDay:
     """PV producing 5kW, household load 1.5kW -> 3.5kW excess.
@@ -73,7 +67,9 @@ class TestSunnyDay:
         power = _make_power(excess=3500.0, pv=5000.0)
         history = [power] * 6
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), history, _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), history, _make_tariff()
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
 
         # EV charger gets the 3kW (highest priority)
@@ -104,7 +100,9 @@ class TestSunnyDay:
         ]
         power = _make_power(excess=3500.0, pv=5000.0)
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), [power], _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), [power], _make_tariff()
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
 
         assert decisions["ev"].action == Action.ON
@@ -127,7 +125,9 @@ class TestSunnyDay:
         # 3000+200 + 2000+200 + 1000+200 = 6600W needed
         power = _make_power(excess=7000.0, pv=8500.0)
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), [power], _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), [power], _make_tariff()
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
 
         assert decisions["ev"].action == Action.ON
@@ -138,6 +138,7 @@ class TestSunnyDay:
 # ---------------------------------------------------------------------------
 # Scenario 2: Cloudy Day (Hysteresis)
 # ---------------------------------------------------------------------------
+
 
 class TestCloudyDay:
     """Excess oscillating: history [500, -20, 300, -30, 200, -10] watts.
@@ -164,7 +165,9 @@ class TestCloudyDay:
         # Current reading is mildly negative
         power = _make_power(excess=-10)
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), history, _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), history, _make_tariff()
+        )
 
         assert len(result.decisions) == 1
         decision = result.decisions[0]
@@ -190,7 +193,9 @@ class TestCloudyDay:
         ]
         power = _make_power(excess=-350)
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), history, _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), history, _make_tariff()
+        )
 
         assert len(result.decisions) == 1
         assert result.decisions[0].action == Action.OFF, (
@@ -229,7 +234,9 @@ class TestCloudyDay:
         ]
         power = _make_power(excess=-200)
 
-        result = optimizer.optimize(power, appliances, states, _empty_plan(), history, _make_tariff())
+        result = optimizer.optimize(
+            power, appliances, states, _empty_plan(), history, _make_tariff()
+        )
 
         # New behavior: instant_budget = -200 < off_threshold (-50) → shed fires.
         assert result.decisions[0].action == Action.OFF
@@ -239,6 +246,7 @@ class TestCloudyDay:
 # ---------------------------------------------------------------------------
 # Scenario 3: Cheap Night Tariff
 # ---------------------------------------------------------------------------
+
 
 class TestCheapNightTariff:
     """No solar (excess=0), cheap tariff below threshold.
@@ -276,7 +284,10 @@ class TestCheapNightTariff:
             f"Appliance should be ON from grid supplement during cheap tariff but got {decision.action}. "
             f"Reason: {decision.reason}"
         )
-        assert "grid supplement" in decision.reason.lower() or "grid" in decision.reason.lower()
+        assert (
+            "grid supplement" in decision.reason.lower()
+            or "grid" in decision.reason.lower()
+        )
 
     def test_expensive_tariff_with_no_excess_stays_idle(self):
         """Expensive tariff, no solar: grid supplement does NOT activate appliance."""
@@ -306,6 +317,7 @@ class TestCheapNightTariff:
 # ---------------------------------------------------------------------------
 # Scenario 4: EV Deadline (plan entry with DEADLINE reason)
 # ---------------------------------------------------------------------------
+
 
 class TestEVDeadline:
     """Plan has a deadline entry for the EV charger approaching.
@@ -339,7 +351,7 @@ class TestEVDeadline:
             entries=[entry],
             battery_target=BatteryTarget(
                 target_soc=90.0,
-                target_time=datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc),
+                target_time=datetime(2026, 3, 23, 7, 0, tzinfo=UTC),
                 strategy=BatteryStrategy.BALANCED,
             ),
             confidence=0.9,
@@ -404,6 +416,7 @@ class TestEVDeadline:
 # ---------------------------------------------------------------------------
 # Scenario 5: Export Limit
 # ---------------------------------------------------------------------------
+
 
 class TestExportLimit:
     """PV producing 6kW, load 1kW -> excess 5kW.
@@ -484,6 +497,7 @@ class TestExportLimit:
 # ---------------------------------------------------------------------------
 # Scenario 6: EV Disconnected
 # ---------------------------------------------------------------------------
+
 
 class TestEVDisconnected:
     """Plenty of excess but EV is not plugged in.
@@ -575,6 +589,7 @@ class TestEVDisconnected:
 # ---------------------------------------------------------------------------
 # Scenario 7: Big Consumer Battery Protection
 # ---------------------------------------------------------------------------
+
 
 class TestBigConsumerBatteryProtection:
     """Two big consumers both active.
@@ -710,6 +725,7 @@ class TestBigConsumerBatteryProtection:
 # ---------------------------------------------------------------------------
 # Scenario 8: High Feed-In Tariff
 # ---------------------------------------------------------------------------
+
 
 class TestHighFeedInTariff:
     """2kW excess, 1kW appliance with allow_grid_supplement.

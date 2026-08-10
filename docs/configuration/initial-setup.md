@@ -8,10 +8,10 @@ This page walks you through the PV Excess Control setup wizard step by step.
 
 Choose the type of inverter in your system:
 
-| Option | When to use |
-|--------|-------------|
-| **Standard** | PV + grid only, no battery storage |
-| **Hybrid** | PV + battery storage (battery steps appear later) |
+| Option       | When to use                                       |
+| ------------ | ------------------------------------------------- |
+| **Standard** | PV + grid only, no battery storage                |
+| **Hybrid**   | PV + battery storage (battery steps appear later) |
 
 Also set **Grid Voltage** (default: 230 V). This is used to convert between amps and watts for dynamic current control.
 
@@ -60,22 +60,22 @@ See [Solar Forecast](solar-forecast.md) for details.
 
 Configure how the battery is managed alongside appliances:
 
-| Strategy | Behavior |
-|----------|----------|
-| **Battery First** | Fills the battery before turning on appliances |
-| **Appliance First** | Runs appliances before charging the battery |
-| **Balanced** | Splits excess proportionally between battery and appliances |
+| Strategy            | Behavior                                                    |
+| ------------------- | ----------------------------------------------------------- |
+| **Battery First**   | Fills the battery before turning on appliances              |
+| **Appliance First** | Runs appliances before charging the battery                 |
+| **Balanced**        | Splits excess proportionally between battery and appliances |
 
 Additional battery settings:
 
-| Field | Description |
-|-------|-------------|
-| **Target SoC** | Desired charge level to reach by target time (e.g. 80%) |
-| **Target Time** | Time by which the battery should reach target SoC (e.g. 07:00) |
-| **Allow Grid Charging** | Allow charging the battery from the grid during cheap tariff periods |
-| **Battery Max Discharge Entity** | Entity to control maximum battery discharge power |
-| **Battery Max Discharge Default** | Default maximum discharge power when no override is active (W) |
-| **Min Battery SoC** | When battery SoC drops below this threshold, all non-essential appliances are shed and battery discharge is blocked. Leave empty to disable. |
+| Field                             | Description                                                                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Target SoC**                    | Desired charge level to reach by target time (e.g. 80%)                                                                                      |
+| **Target Time**                   | Time by which the battery should reach target SoC (e.g. 07:00)                                                                               |
+| **Allow Grid Charging**           | Allow charging the battery from the grid during cheap tariff periods                                                                         |
+| **Battery Max Discharge Entity**  | Entity to control maximum battery discharge power                                                                                            |
+| **Battery Max Discharge Default** | Default maximum discharge power when no override is active (W)                                                                               |
+| **Min Battery SoC**               | When battery SoC drops below this threshold, all non-essential appliances are shed and battery discharge is blocked. Leave empty to disable. |
 
 See [Battery Management](../features/battery-management.md) for details.
 
@@ -83,17 +83,17 @@ See [Battery Management](../features/battery-management.md) for details.
 
 ## Step 6 — Global Settings
 
-| Field | Default | Description |
-|-------|---------|-------------|
-| Controller Interval | 30 s | How often the real-time optimizer runs |
-| Planner Interval | 900 s | How often the 24-hour planner recalculates |
-| Plan Influence | Light | How the planner affects decisions: **None** (pure reactive), **Light** (lower thresholds when plan says ON), **Plan follows** (schedule-driven). See [How It Works](../advanced/how-it-works.md#plan-influence) |
-| Enable Preemption | Off | When enabled, the optimizer can shed lower-priority appliances to start higher-priority ones that lack sufficient excess power |
-| Export Limit | — | Maximum grid export in watts (for feed-in capped systems) |
-| Notification Service | — | HA notify service name (e.g. `notify.mobile_app_phone`) |
-| Notify Appliance On | Off | Send a notification when an appliance is turned on |
-| Notify Appliance Off | Off | Send a notification when an appliance is turned off |
-| Notify Daily Summary | Off | Send a daily summary at midnight with energy stats |
+| Field                | Default | Description                                                                                                                                                                                                     |
+| -------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Controller Interval  | 30 s    | How often the real-time optimizer runs                                                                                                                                                                          |
+| Planner Interval     | 900 s   | How often the 24-hour planner recalculates                                                                                                                                                                      |
+| Plan Influence       | Light   | How the planner affects decisions: **None** (pure reactive), **Light** (lower thresholds when plan says ON), **Plan follows** (schedule-driven). See [How It Works](../advanced/how-it-works.md#plan-influence) |
+| Enable Preemption    | Off     | When enabled, the optimizer can shed lower-priority appliances to start higher-priority ones that lack sufficient excess power                                                                                  |
+| Export Limit         | —       | Maximum grid export in watts (for feed-in capped systems)                                                                                                                                                       |
+| Notification Service | —       | HA notify service name (e.g. `notify.mobile_app_phone`)                                                                                                                                                         |
+| Notify Appliance On  | Off     | Send a notification when an appliance is turned on                                                                                                                                                              |
+| Notify Appliance Off | Off     | Send a notification when an appliance is turned off                                                                                                                                                             |
+| Notify Daily Summary | Off     | Send a daily summary at midnight with energy stats                                                                                                                                                              |
 
 ---
 
@@ -134,6 +134,7 @@ Battery strategy: Balanced
 ```
 
 Appliances added:
+
 - EV Charger (priority 10, dynamic current, EV SoC sensor)
 - Heat Pump (priority 20, 2000 W, on-only mode)
 - Dishwasher (priority 50, 1800 W, min runtime 1h)

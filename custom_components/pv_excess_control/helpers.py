@@ -1,4 +1,5 @@
 """Sensor combiner helpers for multi-inverter/battery setups."""
+
 from __future__ import annotations
 
 import logging
