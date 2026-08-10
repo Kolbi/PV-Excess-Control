@@ -14,4 +14,4 @@ select = [
 ]
 
 [codespell]
-skip = "README.de.md"
+skip = 'README.de.md'
