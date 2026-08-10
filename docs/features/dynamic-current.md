@@ -25,13 +25,13 @@ If excess falls below what the minimum current requires, the charger is turned o
 
 Enable **Dynamic Current** on the appliance:
 
-| Field | Example | Description |
-|-------|---------|-------------|
-| Current Entity | `number.wallbox_charging_current` | Writable number entity |
-| Min Current | `6` | EVSE minimum (usually 6 A) |
-| Max Current | `16` or `32` | EVSE or circuit maximum |
-| Current Step | `1.0` | Resolution of current adjustments (default: 0.1 A). Set to 1.0 for chargers that only accept whole-amp values. |
-| Phases | `3` | 1 or 3 phase |
+| Field          | Example                           | Description                                                                                                    |
+| -------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Current Entity | `number.wallbox_charging_current` | Writable number entity                                                                                         |
+| Min Current    | `6`                               | EVSE minimum (usually 6 A)                                                                                     |
+| Max Current    | `16` or `32`                      | EVSE or circuit maximum                                                                                        |
+| Current Step   | `1.0`                             | Resolution of current adjustments (default: 0.1 A). Set to 1.0 for chargers that only accept whole-amp values. |
+| Phases         | `3`                               | 1 or 3 phase                                                                                                   |
 
 ---
 
@@ -56,12 +56,13 @@ The charger must support IEC 61851 pilot signal current control (almost all mode
 The minimum power needed to charge at minimum current:
 
 | Min Current | 1-phase | 3-phase |
-|-------------|---------|---------|
-| 6 A | 1380 W | 4140 W |
-| 8 A | 1840 W | 5520 W |
-| 10 A | 2300 W | 6900 W |
+| ----------- | ------- | ------- |
+| 6 A         | 1380 W  | 4140 W  |
+| 8 A         | 1840 W  | 5520 W  |
+| 10 A        | 2300 W  | 6900 W  |
 
 If your solar production is typically below these thresholds, consider:
+
 - Setting **Allow Grid Supplement** with a small **Max Grid Power** to bridge the gap
 - Using the **Schedule Deadline** feature to charge during cheap overnight hours instead
 

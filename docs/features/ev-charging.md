@@ -56,6 +56,7 @@ Configure the target SoC per appliance when adding or editing the EV charger in 
 When a **Schedule Deadline** is set (e.g. `07:00`), the planner guarantees the EV reaches its **Min Daily Runtime** by that time.
 
 The planner:
+
 1. Calculates how much runtime remains to meet the minimum
 2. Finds the cheapest available hours (solar excess or cheap tariff) before the deadline
 3. Schedules charging in those hours
@@ -80,12 +81,14 @@ The optimizer fills higher-priority chargers first and uses remaining excess for
 ## Integration with Common Charger Brands
 
 ### go-eCharger
+
 ```
 Switch Entity:   switch.go_echarger_charging
 Current Entity:  number.go_echarger_max_current
 ```
 
 ### Wallbox Pulsar Plus
+
 ```
 Switch Entity:   switch.wallbox_charging
 Current Entity:  number.wallbox_max_charging_current
@@ -93,6 +96,7 @@ Connected Sensor: binary_sensor.wallbox_status_description  # check state values
 ```
 
 ### OCPP Charger
+
 ```
 Switch Entity:   switch.ocpp_charge_point
 Current Entity:  number.ocpp_charge_limit_amps

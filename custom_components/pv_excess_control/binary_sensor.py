@@ -1,4 +1,5 @@
 """Binary sensor platform for PV Excess Control."""
+
 from __future__ import annotations
 
 import logging
@@ -36,8 +37,12 @@ async def async_setup_entry(
     # Per-appliance active sensors
     subentries = getattr(config_entry, "subentries", {})
     for subentry_id, subentry in subentries.items():
-        appliance_name = subentry.data.get(CONF_APPLIANCE_NAME, f"Appliance {subentry_id}")
-        entities.append(ApplianceActiveBinarySensor(coordinator, subentry_id, appliance_name))
+        appliance_name = subentry.data.get(
+            CONF_APPLIANCE_NAME, f"Appliance {subentry_id}"
+        )
+        entities.append(
+            ApplianceActiveBinarySensor(coordinator, subentry_id, appliance_name)
+        )
 
     async_add_entities(entities)
 
@@ -89,11 +94,7 @@ class ExcessAvailableBinarySensor(_PvExcessBinarySensorBase):
             return power_state.excess_power > EXCESS_AVAILABLE_THRESHOLD
         # Use averaged excess from history to smooth out transient spikes.
         # Skip None samples (sensor was unavailable that cycle).
-        good = [
-            ps.excess_power
-            for ps in history
-            if ps.excess_power is not None
-        ]
+        good = [ps.excess_power for ps in history if ps.excess_power is not None]
         if not good:
             return False
         avg_excess = sum(good) / len(good)

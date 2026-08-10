@@ -4,6 +4,7 @@ Exposes coordinator data as Home Assistant sensor entities:
 - System-level sensors (excess power, plan confidence, etc.)
 - Per-appliance sensors (power, runtime, energy, status)
 """
+
 from __future__ import annotations
 
 import logging
@@ -52,14 +53,18 @@ async def async_setup_entry(
     # Per-appliance sensors from subentries
     subentries = getattr(config_entry, "subentries", {})
     for subentry_id, subentry in subentries.items():
-        appliance_name = subentry.data.get(CONF_APPLIANCE_NAME, f"Appliance {subentry_id}")
-        entities.extend([
-            PvAppliancePowerSensor(coordinator, subentry_id, appliance_name),
-            PvApplianceRuntimeSensor(coordinator, subentry_id, appliance_name),
-            PvApplianceEnergySensor(coordinator, subentry_id, appliance_name),
-            PvApplianceActivationsSensor(coordinator, subentry_id, appliance_name),
-            PvApplianceStatusSensor(coordinator, subentry_id, appliance_name),
-        ])
+        appliance_name = subentry.data.get(
+            CONF_APPLIANCE_NAME, f"Appliance {subentry_id}"
+        )
+        entities.extend(
+            [
+                PvAppliancePowerSensor(coordinator, subentry_id, appliance_name),
+                PvApplianceRuntimeSensor(coordinator, subentry_id, appliance_name),
+                PvApplianceEnergySensor(coordinator, subentry_id, appliance_name),
+                PvApplianceActivationsSensor(coordinator, subentry_id, appliance_name),
+                PvApplianceStatusSensor(coordinator, subentry_id, appliance_name),
+            ]
+        )
 
     async_add_entities(entities)
 
@@ -162,13 +167,21 @@ class PvPlanConfidenceSensor(PvExcessBaseSensor):
         for entry in plan.entries:
             e: dict[str, Any] = {
                 "appliance_id": entry.appliance_id,
-                "appliance_name": configs[entry.appliance_id].name if entry.appliance_id in configs else entry.appliance_id,
-                "action": entry.action.value if hasattr(entry.action, 'value') else str(entry.action),
+                "appliance_name": configs[entry.appliance_id].name
+                if entry.appliance_id in configs
+                else entry.appliance_id,
+                "action": entry.action.value
+                if hasattr(entry.action, "value")
+                else str(entry.action),
                 "reason": entry.reason,
             }
             if entry.window:
-                e["window_start"] = entry.window.start.isoformat() if entry.window.start else None
-                e["window_end"] = entry.window.end.isoformat() if entry.window.end else None
+                e["window_start"] = (
+                    entry.window.start.isoformat() if entry.window.start else None
+                )
+                e["window_end"] = (
+                    entry.window.end.isoformat() if entry.window.end else None
+                )
             entries.append(e)
         return {"plan_entries": entries, "plan_entry_count": len(plan.entries)}
 
@@ -240,7 +253,9 @@ class PvApplianceRuntimeSensor(PvApplianceBaseSensor):
         appliance_id: str,
         appliance_name: str,
     ) -> None:
-        super().__init__(coordinator, appliance_id, appliance_name, "runtime_today", "Runtime Today")
+        super().__init__(
+            coordinator, appliance_id, appliance_name, "runtime_today", "Runtime Today"
+        )
 
     @property
     def native_value(self) -> float | None:
@@ -265,12 +280,15 @@ class PvApplianceEnergySensor(PvApplianceBaseSensor):
         appliance_id: str,
         appliance_name: str,
     ) -> None:
-        super().__init__(coordinator, appliance_id, appliance_name, "energy_today", "Energy Today")
+        super().__init__(
+            coordinator, appliance_id, appliance_name, "energy_today", "Energy Today"
+        )
 
     @property
     def last_reset(self):
         """Return the start of today (timezone-aware) for daily-resetting energy counter."""
         from homeassistant.util import dt as dt_util
+
         return dt_util.start_of_local_day()
 
     @property
@@ -293,7 +311,13 @@ class PvApplianceActivationsSensor(PvApplianceBaseSensor):
         appliance_id: str,
         appliance_name: str,
     ) -> None:
-        super().__init__(coordinator, appliance_id, appliance_name, "activations_today", "Activations Today")
+        super().__init__(
+            coordinator,
+            appliance_id,
+            appliance_name,
+            "activations_today",
+            "Activations Today",
+        )
 
     @property
     def native_value(self) -> int | None:

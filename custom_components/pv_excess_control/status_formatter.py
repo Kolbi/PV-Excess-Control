@@ -10,6 +10,7 @@ and optional Plan, and returns a FormattedStatus containing:
 
 See docs/specs/2026-04-06-status-sensor-enhancements-design.md.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -35,6 +36,7 @@ class FormattedStatus:
     `text` is the decorated state string for the HA sensor state.
     The other fields map 1:1 to sensor extra_state_attributes.
     """
+
     text: str
     action: str
     overrides_plan: bool
@@ -108,15 +110,13 @@ def format_status(
     )
     if switch_deferred:
         suffixes.append(
-            f" (switch deferred - "
-            f"{format_duration(cooldown_remaining)} cooldown)"
+            f" (switch deferred - {format_duration(cooldown_remaining)} cooldown)"
         )
 
     # --- S3: battery discharge soft-limit suffix ---
     if _should_show_battery_limit(decision, config, battery_action):
         suffixes.append(
-            f" [battery discharge limited to "
-            f"{battery_action.max_discharge_watts:.0f}W]"
+            f" [battery discharge limited to {battery_action.max_discharge_watts:.0f}W]"
         )
 
     # --- S4: plan deviation suffix ---
@@ -146,8 +146,7 @@ def format_status(
                 start = matched.window.start.strftime("%H:%M")
                 end = matched.window.end.strftime("%H:%M")
                 suffixes.append(
-                    f" [plan wanted: {plan_action_display} "
-                    f"during {start}-{end}]"
+                    f" [plan wanted: {plan_action_display} during {start}-{end}]"
                 )
             else:
                 suffixes.append(f" [plan wanted: {plan_action_display}]")
@@ -306,11 +305,11 @@ def _find_matching_plan_entry(
             now_naive = now.replace(tzinfo=None)
             start_naive = (
                 window.start.replace(tzinfo=None)
-                if window.start.tzinfo else window.start
+                if window.start.tzinfo
+                else window.start
             )
             end_naive = (
-                window.end.replace(tzinfo=None)
-                if window.end.tzinfo else window.end
+                window.end.replace(tzinfo=None) if window.end.tzinfo else window.end
             )
             if start_naive <= now_naive <= end_naive:
                 return entry

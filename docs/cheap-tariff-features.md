@@ -14,12 +14,12 @@ PV Excess Control responds to cheap (or negative) tariff windows in three ways:
 
 ## Per-appliance settings
 
-| Field                       | Where        | Effect                                                                                |
-|-----------------------------|--------------|---------------------------------------------------------------------------------------|
-| `allow_grid_supplement`     | appliance    | Master gate for *any* grid import on that appliance.                                  |
-| `cheap_price_threshold`     | appliance    | Per-appliance cheap threshold (overrides the global one if set).                      |
-| `max_grid_power`            | appliance    | Hard cap on grid contribution (newly meaningful on dynamic appliances since v…).      |
-| `cheap_grid_target_current` | dynamic only | Target current during cheap windows; defaults to `max_current` on new entries.        |
+| Field                       | Where        | Effect                                                                           |
+| --------------------------- | ------------ | -------------------------------------------------------------------------------- |
+| `allow_grid_supplement`     | appliance    | Master gate for _any_ grid import on that appliance.                             |
+| `cheap_price_threshold`     | appliance    | Per-appliance cheap threshold (overrides the global one if set).                 |
+| `max_grid_power`            | appliance    | Hard cap on grid contribution (newly meaningful on dynamic appliances since v…). |
+| `cheap_grid_target_current` | dynamic only | Target current during cheap windows; defaults to `max_current` on new entries.   |
 
 ### Migration note for existing dynamic-current appliances
 
@@ -32,14 +32,14 @@ the old min-current behaviour explicitly, set
 
 ## Battery settings
 
-| Field                                 | Effect                                                     |
-|---------------------------------------|------------------------------------------------------------|
-| `battery_charge_price_threshold`      | Cheap-window threshold for battery decisions.              |
-| `battery_target_soc`                  | Auto-engage stops once SoC reaches this.                   |
-| `auto_battery_grid_charge`            | Master toggle for the new auto behaviour.                  |
-| `battery_grid_charge_power_w`         | Power written to the inverter on engage.                   |
-| `grid_charge_engage_min_duration_minutes` | Hysteresis floor before disengage is allowed.          |
-| `inverter_force_charge_*` (3 triplets)| Wiring to your inverter's HA entities.                     |
+| Field                                     | Effect                                        |
+| ----------------------------------------- | --------------------------------------------- |
+| `battery_charge_price_threshold`          | Cheap-window threshold for battery decisions. |
+| `battery_target_soc`                      | Auto-engage stops once SoC reaches this.      |
+| `auto_battery_grid_charge`                | Master toggle for the new auto behaviour.     |
+| `battery_grid_charge_power_w`             | Power written to the inverter on engage.      |
+| `grid_charge_engage_min_duration_minutes` | Hysteresis floor before disengage is allowed. |
+| `inverter_force_charge_*` (3 triplets)    | Wiring to your inverter's HA entities.        |
 
 ## Worked example: production-style setup
 

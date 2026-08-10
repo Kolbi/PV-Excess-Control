@@ -2,17 +2,16 @@
 
 Covers: switch.py, number.py, binary_sensor.py, select.py
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timedelta, UTC
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from custom_components.pv_excess_control.const import (
     BatteryStrategy,
-    DOMAIN,
-    MANUFACTURER,
     MAX_PRIORITY,
     MIN_PRIORITY,
 )
@@ -22,6 +21,7 @@ from custom_components.pv_excess_control.models import ApplianceState, PowerStat
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_coordinator(
     enabled: bool = True,
@@ -44,8 +44,12 @@ def _make_coordinator(
     coord.force_charge = force_charge
     coord.battery_strategy = battery_strategy
     coord.appliance_enabled = appliance_enabled if appliance_enabled is not None else {}
-    coord.appliance_overrides = appliance_overrides if appliance_overrides is not None else {}
-    coord.appliance_priorities = appliance_priorities if appliance_priorities is not None else {}
+    coord.appliance_overrides = (
+        appliance_overrides if appliance_overrides is not None else {}
+    )
+    coord.appliance_priorities = (
+        appliance_priorities if appliance_priorities is not None else {}
+    )
     coord.appliance_min_daily_runtime = (
         appliance_min_daily_runtime if appliance_min_daily_runtime is not None else {}
     )
@@ -74,7 +78,7 @@ def _make_power_state(excess_power: float = 0.0) -> PowerState:
         battery_soc=None,
         battery_power=None,
         ev_soc=None,
-        timestamp=datetime(2026, 3, 23, 12, 0, 0, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 3, 23, 12, 0, 0, tzinfo=UTC),
     )
 
 
@@ -94,6 +98,7 @@ def _make_appliance_state(appliance_id: str, is_on: bool = False) -> ApplianceSt
 # ---------------------------------------------------------------------------
 # Switch entity tests
 # ---------------------------------------------------------------------------
+
 
 class TestSwitchEntities:
     """Tests for switch.py entities."""
@@ -261,13 +266,20 @@ class TestSwitchEntities:
         coord = _make_coordinator()
         assert ControlEnabledSwitch(coord).unique_id == "test_entry_id_control_enabled"
         assert ForceChargeSwitch(coord).unique_id == "test_entry_id_force_charge"
-        assert ApplianceEnabledSwitch(coord, "a1", "X").unique_id == "test_entry_id_a1_enabled"
-        assert ApplianceOverrideSwitch(coord, "a1", "X").unique_id == "test_entry_id_a1_override"
+        assert (
+            ApplianceEnabledSwitch(coord, "a1", "X").unique_id
+            == "test_entry_id_a1_enabled"
+        )
+        assert (
+            ApplianceOverrideSwitch(coord, "a1", "X").unique_id
+            == "test_entry_id_a1_override"
+        )
 
 
 # ---------------------------------------------------------------------------
 # Number entity tests
 # ---------------------------------------------------------------------------
+
 
 class TestNumberEntities:
     """Tests for number.py entities."""
@@ -865,15 +877,21 @@ class TestNumberEntities:
         async def _fake_update(entry, sub, *, data):
             sub.data = data
 
-        num.hass.config_entries.async_update_subentry = AsyncMock(side_effect=_fake_update)
+        num.hass.config_entries.async_update_subentry = AsyncMock(
+            side_effect=_fake_update
+        )
 
         await num.async_set_native_value(60.0)
 
         # Called twice: once for min sibling, once for max self
         assert num.hass.config_entries.async_update_subentry.await_count == 2
         # The two calls, in order: min first, then max
-        min_call_kwargs = num.hass.config_entries.async_update_subentry.call_args_list[0].kwargs
-        max_call_kwargs = num.hass.config_entries.async_update_subentry.call_args_list[1].kwargs
+        min_call_kwargs = num.hass.config_entries.async_update_subentry.call_args_list[
+            0
+        ].kwargs
+        max_call_kwargs = num.hass.config_entries.async_update_subentry.call_args_list[
+            1
+        ].kwargs
         assert min_call_kwargs["data"]["min_daily_runtime"] == 60
         # Second call must carry the already-lowered min (guards against a
         # bug where the max persist reads stale subentry.data).
@@ -891,6 +909,7 @@ class TestNumberEntities:
         )
 
         added: list = []
+
         def _add(entities, update_before_add=False):
             added.extend(entities)
 
@@ -916,6 +935,7 @@ class TestNumberEntities:
 # ---------------------------------------------------------------------------
 # Binary sensor entity tests
 # ---------------------------------------------------------------------------
+
 
 class TestBinarySensorEntities:
     """Tests for binary_sensor.py entities."""
@@ -1023,6 +1043,7 @@ class TestBinarySensorEntities:
 # ---------------------------------------------------------------------------
 # Select entity tests
 # ---------------------------------------------------------------------------
+
 
 class TestSelectEntities:
     """Tests for select.py entities."""

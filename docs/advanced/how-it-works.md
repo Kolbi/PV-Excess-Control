@@ -34,12 +34,14 @@ The **Planner** runs less frequently and builds a 24-hour schedule:
 Each Controller cycle runs the Optimizer through four phases:
 
 ### Phase 1: ASSESS
+
 - Averages excess power over recent history to smooth sensor noise
 - Applies **hysteresis**: requires excess > `ON_THRESHOLD` (default 200 W) to turn on, and excess < `OFF_THRESHOLD` (default -50 W) to turn off
 - Checks if each appliance is within its min/max runtime constraints
 - Checks switch interval (don't switch more often than configured)
 
 ### Phase 2: ALLOCATE
+
 - Sorts appliances by priority (1 = highest)
 - For each appliance (highest priority first): allocates available excess
 - For dynamic current appliances: calculates the optimal current
@@ -48,10 +50,12 @@ Each Controller cycle runs the Optimizer through four phases:
 - Can activate appliances during cheap tariff windows even without solar excess
 
 ### Phase 3: SHED
+
 - If total power draw exceeds available excess, reduces current on dynamic appliances
 - If still over-budget, turns off lowest-priority appliances first
 
 ### Phase 4: BATTERY DISCHARGE PROTECTION
+
 - If any "big consumer" appliance is running, checks if the battery discharge should be limited
 - Issues a `BatteryDischargeAction` to cap the battery output
 
@@ -62,14 +66,17 @@ Each Controller cycle runs the Optimizer through four phases:
 The **Plan Influence** setting controls how much the planner's 24-hour schedule affects the optimizer's real-time decisions. Configure it in Settings -> PV Excess Control -> Global Settings.
 
 ### None (Pure Reactive)
+
 The optimizer completely ignores the plan. Decisions are based only on current excess power and tariff. Use this if you don't have a forecast provider configured or prefer pure reactive control.
 
 ### Light (Default)
+
 When the plan schedules an appliance to be ON in the current time slot, the optimizer **lowers the activation threshold**. Normally an appliance needs `nominal_power + 200W` of excess to turn on. With `light` mode and a plan match, it only needs `nominal_power` (the 200W buffer is removed). The plan never forces an appliance ON without any excess -- it just makes the optimizer more willing.
 
 **Best for:** Most users. Gets the benefit of forecast data (Solcast, tariff schedules) without the risk of unexpected grid consumption.
 
 ### Plan Follows (Schedule-Driven)
+
 The optimizer actively follows the plan. If the plan schedules an appliance ON based on forecast or cheap tariff windows, it activates even without full solar excess. The optimizer overrides only when actual conditions deviate significantly from the forecast.
 
 **Best for:** Users with reliable forecast data (Solcast with good accuracy) and tariff providers, who want maximum automation.
@@ -89,6 +96,7 @@ OptimizerResult (list of ControlDecisions)
 ```
 
 This means:
+
 - The optimizer can be unit-tested without any HA mocking
 - The same optimizer logic runs in tests and production
 - Logic bugs are caught at the unit test level, not during runtime
@@ -123,7 +131,7 @@ Controller.build_power_state()
 
 ## Plan vs. Real-Time
 
-The Controller always runs real-time control. The Plan is a *guide*, not a hard constraint. If real conditions deviate from the plan:
+The Controller always runs real-time control. The Plan is a _guide_, not a hard constraint. If real conditions deviate from the plan:
 
 - Real excess < planned: the Controller sheds appliances immediately
 - Real excess > planned: the Controller allocates extra power by priority

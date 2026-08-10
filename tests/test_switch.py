@@ -1,4 +1,5 @@
 """Tests for ForceChargeSwitch snappy engage/disengage behaviour."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,7 +16,10 @@ from custom_components.pv_excess_control.const import (
 
 @pytest.mark.asyncio
 async def test_force_charge_switch_on_calls_engage_immediately(
-    coordinator_factory, mock_inverter_controller, mock_tariff_at, mock_power_state_with_soc,
+    coordinator_factory,
+    mock_inverter_controller,
+    mock_tariff_at,
+    mock_power_state_with_soc,
 ):
     """Flipping the switch ON triggers engage immediately, not on the next coordinator cycle."""
     from custom_components.pv_excess_control.switch import ForceChargeSwitch
@@ -42,7 +46,10 @@ async def test_force_charge_switch_on_calls_engage_immediately(
 
 @pytest.mark.asyncio
 async def test_force_charge_switch_off_calls_disengage_immediately_when_not_auto_should_engage(
-    coordinator_factory, mock_inverter_controller, mock_tariff_at, mock_power_state_with_soc,
+    coordinator_factory,
+    mock_inverter_controller,
+    mock_tariff_at,
+    mock_power_state_with_soc,
 ):
     """When auto_should_engage_now is False, flipping switch OFF disengages immediately."""
     from custom_components.pv_excess_control.switch import ForceChargeSwitch
@@ -75,7 +82,10 @@ async def test_force_charge_switch_off_calls_disengage_immediately_when_not_auto
 
 @pytest.mark.asyncio
 async def test_force_charge_switch_off_keeps_engaged_when_auto_should_engage_now(
-    coordinator_factory, mock_inverter_controller, mock_tariff_at, mock_power_state_with_soc,
+    coordinator_factory,
+    mock_inverter_controller,
+    mock_tariff_at,
+    mock_power_state_with_soc,
 ):
     """When auto_should_engage_now is True (cheap window, SoC below target), switch OFF
     leaves the inverter engaged via the auto path."""
@@ -106,7 +116,9 @@ async def test_force_charge_switch_off_keeps_engaged_when_auto_should_engage_now
 
 
 @pytest.mark.asyncio
-async def test_force_charge_switch_no_inverter_configured_no_engage_call(coordinator_factory):
+async def test_force_charge_switch_no_inverter_configured_no_engage_call(
+    coordinator_factory,
+):
     """No inverter wired — switch still works (sheds appliances), no engage/disengage calls."""
     from custom_components.pv_excess_control.switch import ForceChargeSwitch
 

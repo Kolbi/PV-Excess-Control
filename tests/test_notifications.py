@@ -1,10 +1,10 @@
 """Tests for PV Excess Control notification manager."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 
 from custom_components.pv_excess_control.const import (
     DEFAULT_NOTIFICATION_SETTINGS,
@@ -16,6 +16,7 @@ from custom_components.pv_excess_control.notifications import NotificationManage
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_hass() -> MagicMock:
     """Create a minimal mock HomeAssistant object."""
@@ -30,7 +31,9 @@ def _make_manager(
     service: str | None = None,
 ) -> tuple[MagicMock, NotificationManager]:
     hass = _make_hass()
-    manager = NotificationManager(hass, notification_settings=settings, notification_service=service)
+    manager = NotificationManager(
+        hass, notification_settings=settings, notification_service=service
+    )
     return hass, manager
 
 
@@ -38,13 +41,16 @@ def _make_manager(
 # TestNotificationManager
 # ---------------------------------------------------------------------------
 
+
 class TestNotificationManager:
     async def test_enabled_event_sends(self):
         """Enabled events send notifications."""
         settings = {NotificationEvent.SENSOR_UNAVAILABLE: True}
         hass, manager = _make_manager(settings=settings)
 
-        result = await manager.async_notify(NotificationEvent.SENSOR_UNAVAILABLE, "Test message")
+        result = await manager.async_notify(
+            NotificationEvent.SENSOR_UNAVAILABLE, "Test message"
+        )
 
         assert result is True
         hass.services.async_call.assert_awaited_once()
@@ -54,7 +60,9 @@ class TestNotificationManager:
         settings = {NotificationEvent.APPLIANCE_ON: False}
         hass, manager = _make_manager(settings=settings)
 
-        result = await manager.async_notify(NotificationEvent.APPLIANCE_ON, "Appliance on")
+        result = await manager.async_notify(
+            NotificationEvent.APPLIANCE_ON, "Appliance on"
+        )
 
         assert result is False
         hass.services.async_call.assert_not_awaited()
@@ -88,7 +96,9 @@ class TestNotificationManager:
         past_time = datetime.now() - timedelta(seconds=301)
         manager._last_sent[NotificationEvent.FORCE_CHARGE] = past_time
 
-        result = await manager.async_notify(NotificationEvent.FORCE_CHARGE, "After window")
+        result = await manager.async_notify(
+            NotificationEvent.FORCE_CHARGE, "After window"
+        )
 
         assert result is True
         hass.services.async_call.assert_awaited_once()
@@ -96,9 +106,13 @@ class TestNotificationManager:
     async def test_custom_service(self):
         """Custom notification service used when configured."""
         settings = {NotificationEvent.OVERRIDE_ACTIVATED: True}
-        hass, manager = _make_manager(settings=settings, service="notify.mobile_app_phone")
+        hass, manager = _make_manager(
+            settings=settings, service="notify.mobile_app_phone"
+        )
 
-        await manager.async_notify(NotificationEvent.OVERRIDE_ACTIVATED, "Override active")
+        await manager.async_notify(
+            NotificationEvent.OVERRIDE_ACTIVATED, "Override active"
+        )
 
         hass.services.async_call.assert_awaited_once_with(
             "notify",
@@ -109,7 +123,9 @@ class TestNotificationManager:
     async def test_custom_service_with_subdomain(self):
         """Custom service with dots in name is split at first dot."""
         settings = {NotificationEvent.OVERRIDE_ACTIVATED: True}
-        hass, manager = _make_manager(settings=settings, service="notify.group.all_devices")
+        hass, manager = _make_manager(
+            settings=settings, service="notify.group.all_devices"
+        )
 
         await manager.async_notify(NotificationEvent.OVERRIDE_ACTIVATED, "msg")
 
@@ -141,7 +157,9 @@ class TestNotificationManager:
         settings = {NotificationEvent.FORCE_CHARGE: True}
         hass, manager = _make_manager(settings=settings)
 
-        await manager.async_notify(NotificationEvent.FORCE_CHARGE, "msg", title="My Title")
+        await manager.async_notify(
+            NotificationEvent.FORCE_CHARGE, "msg", title="My Title"
+        )
 
         service_data = hass.services.async_call.call_args.args[2]
         assert service_data["title"] == "My Title"
@@ -180,7 +198,9 @@ class TestNotificationManager:
         await manager.notify_appliance_off("Hot Water Heater", "insufficient excess")
 
         service_data = hass.services.async_call.call_args.args[2]
-        assert service_data["message"] == "Hot Water Heater stopped: insufficient excess"
+        assert (
+            service_data["message"] == "Hot Water Heater stopped: insufficient excess"
+        )
 
     async def test_override_message_without_until(self):
         """Override notification message without an end time."""
@@ -242,27 +262,40 @@ class TestNotificationManager:
         await manager.notify_daily_summary(ratio=82.0, savings=3.40, solar_kwh=18.2)
 
         service_data = hass.services.async_call.call_args.args[2]
-        assert service_data["message"] == "Today: 82% self-consumption, saved 3.40, 18.2 kWh solar"
+        assert (
+            service_data["message"]
+            == "Today: 82% self-consumption, saved 3.40, 18.2 kWh solar"
+        )
 
     async def test_forecast_warning_message(self):
         """Correct message format for forecast warning."""
         settings = {NotificationEvent.FORECAST_WARNING: True}
         hass, manager = _make_manager(settings=settings)
 
-        await manager.notify_forecast_warning(tomorrow_kwh=4.2, actions="Pre-heating scheduled.")
+        await manager.notify_forecast_warning(
+            tomorrow_kwh=4.2, actions="Pre-heating scheduled."
+        )
 
         service_data = hass.services.async_call.call_args.args[2]
-        assert service_data["message"] == "Tomorrow: low solar (4.2 kWh). Pre-heating scheduled."
+        assert (
+            service_data["message"]
+            == "Tomorrow: low solar (4.2 kWh). Pre-heating scheduled."
+        )
 
     async def test_plan_deviation_message(self):
         """Correct message format for plan deviation."""
         settings = {NotificationEvent.PLAN_DEVIATION: True}
         hass, manager = _make_manager(settings=settings)
 
-        await manager.notify_plan_deviation("EV Charger", "actual solar 40% below forecast")
+        await manager.notify_plan_deviation(
+            "EV Charger", "actual solar 40% below forecast"
+        )
 
         service_data = hass.services.async_call.call_args.args[2]
-        assert service_data["message"] == "EV Charger deviated from plan: actual solar 40% below forecast"
+        assert (
+            service_data["message"]
+            == "EV Charger deviated from plan: actual solar 40% below forecast"
+        )
 
     async def test_all_event_types_have_methods(self):
         """All NotificationEvent types have convenience methods."""
@@ -297,7 +330,9 @@ class TestNotificationManager:
             NotificationEvent.FORCE_CHARGE,
             NotificationEvent.SENSOR_UNAVAILABLE,
         ):
-            assert manager.settings[event] is True, f"{event} should be enabled by default"
+            assert manager.settings[event] is True, (
+                f"{event} should be enabled by default"
+            )
 
     async def test_default_settings_events_disabled(self):
         """Events disabled by default are inactive."""
@@ -310,7 +345,9 @@ class TestNotificationManager:
             NotificationEvent.FORECAST_WARNING,
             NotificationEvent.PLAN_DEVIATION,
         ):
-            assert manager.settings[event] is False, f"{event} should be disabled by default"
+            assert manager.settings[event] is False, (
+                f"{event} should be disabled by default"
+            )
 
     async def test_returns_false_when_disabled(self):
         """Convenience methods return False when event is disabled."""

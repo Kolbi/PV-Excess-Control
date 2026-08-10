@@ -1,17 +1,12 @@
 """Tests for PV Excess Control optimizer - Phases 1 (ASSESS) & 2 (ALLOCATE)."""
+
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import pytest
 
-from custom_components.pv_excess_control.const import (
-    DEFAULT_DYNAMIC_ON_THRESHOLD,
-    DEFAULT_GRID_VOLTAGE,
-    DEFAULT_OFF_THRESHOLD,
-    DEFAULT_ON_THRESHOLD,
-)
 from custom_components.pv_excess_control.models import (
     Action,
     ApplianceConfig,
@@ -20,7 +15,6 @@ from custom_components.pv_excess_control.models import (
     BatteryStrategy,
     BatteryTarget,
     ControlDecision,
-    OptimizerResult,
     Plan,
     PlanEntry,
     PlanReason,
@@ -34,6 +28,7 @@ from custom_components.pv_excess_control.optimizer import Optimizer
 # ---------------------------------------------------------------------------
 # Test-only optimizer factory
 # ---------------------------------------------------------------------------
+
 
 def _optimizer_for_tests(**kwargs) -> Optimizer:
     """Build an optimizer for unit tests.
@@ -54,8 +49,9 @@ def _optimizer_for_tests(**kwargs) -> Optimizer:
 # Helpers (reusable in Tasks 4-5)
 # ---------------------------------------------------------------------------
 
+
 def _utcnow() -> datetime:
-    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
 
 
 def _make_appliance(
@@ -179,7 +175,7 @@ def _empty_plan() -> Plan:
         entries=[],
         battery_target=BatteryTarget(
             target_soc=90.0,
-            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc),
+            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=UTC),
             strategy=BatteryStrategy.BALANCED,
         ),
         confidence=0.8,
@@ -189,6 +185,7 @@ def _empty_plan() -> Plan:
 # ---------------------------------------------------------------------------
 # TestOptimizerAllocate
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerAllocate:
     """Test Phase 2: ALLOCATE logic."""
@@ -311,6 +308,7 @@ class TestOptimizerAllocate:
 # TestOptimizerHysteresis
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerHysteresis:
     """Test Phase 1: ASSESS hysteresis logic."""
 
@@ -361,6 +359,7 @@ class TestOptimizerHysteresis:
 # ---------------------------------------------------------------------------
 # TestOptimizerDynamicCurrent
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerDynamicCurrent:
     """Test dynamic current allocation for EV chargers and similar appliances."""
@@ -552,6 +551,7 @@ class TestOptimizerDynamicCurrent:
 # TestOptimizerRemainingExcess
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerBudgets:
     """Test that the avg_budget is tracked correctly across allocations."""
 
@@ -606,6 +606,7 @@ class TestOptimizerBudgets:
 # TestOptimizerBatteryDischarge
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerBatteryDischarge:
     """Test that battery discharge action is a placeholder for Phases 3-5."""
 
@@ -628,6 +629,7 @@ class TestOptimizerBatteryDischarge:
 # ---------------------------------------------------------------------------
 # TestOptimizerPowerHistory
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerPowerHistory:
     """Test that average excess is computed from power_history."""
@@ -664,6 +666,7 @@ class TestOptimizerPowerHistory:
 # TestOptimizerOnOnly
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerOnOnly:
     """Test on_only appliances that should never be turned off once on."""
 
@@ -691,6 +694,7 @@ class TestOptimizerOnOnly:
 # ---------------------------------------------------------------------------
 # TestOptimizerShed
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerShed:
     """Test Phase 3: SHED logic - reduce/turn off lowest priority first."""
@@ -725,7 +729,9 @@ class TestOptimizerShed:
         """Appliances with on_only=True should never be shed."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(
-            id="on_only_app", on_only=True, nominal_power=1000.0,
+            id="on_only_app",
+            on_only=True,
+            nominal_power=1000.0,
         )
         state = _make_state(id="on_only_app", is_on=True, current_power=1000.0)
         # Excess is -500W
@@ -750,20 +756,28 @@ class TestOptimizerShed:
         # Two appliances with same priority
         # app_met has run 3h out of min 2h -> met minimum
         app_met = _make_appliance(
-            id="met", priority=5, nominal_power=1000.0,
+            id="met",
+            priority=5,
+            nominal_power=1000.0,
             min_daily_runtime=timedelta(hours=2),
         )
         # app_unmet has run 1h out of min 4h -> not met minimum
         app_unmet = _make_appliance(
-            id="unmet", priority=5, nominal_power=1000.0,
+            id="unmet",
+            priority=5,
+            nominal_power=1000.0,
             min_daily_runtime=timedelta(hours=4),
         )
         state_met = _make_state(
-            id="met", is_on=True, current_power=1000.0,
+            id="met",
+            is_on=True,
+            current_power=1000.0,
             runtime_today=timedelta(hours=3),
         )
         state_unmet = _make_state(
-            id="unmet", is_on=True, current_power=1000.0,
+            id="unmet",
+            is_on=True,
+            current_power=1000.0,
             runtime_today=timedelta(hours=1),
         )
         # Only need to shed one appliance worth of power (-500W deficit, 1000W each)
@@ -789,6 +803,7 @@ class TestOptimizerShed:
 # TestOptimizerDynamicCurrentShed
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerDynamicCurrentShed:
     """Test that shedding reduces dynamic current before turning off."""
 
@@ -807,7 +822,9 @@ class TestOptimizerDynamicCurrentShed:
             priority=5,
         )
         state = _make_state(
-            id="ev_charger", is_on=True, current_power=3680.0,
+            id="ev_charger",
+            is_on=True,
+            current_power=3680.0,
         )
         # Excess drops but not catastrophically: -1000W
         # Currently consuming 3680W. With -1000W excess, available for this
@@ -836,6 +853,7 @@ class TestOptimizerDynamicCurrentShed:
 # ---------------------------------------------------------------------------
 # TestOptimizerBatteryProtection
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerBatteryProtection:
     """Test Phase 4: BATTERY DISCHARGE PROTECTION logic."""
@@ -871,7 +889,8 @@ class TestOptimizerBatteryProtection:
         """Without active big consumers, no discharge limiting."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(
-            id="washer", nominal_power=500.0,
+            id="washer",
+            nominal_power=500.0,
             is_big_consumer=False,
         )
         state = _make_state(id="washer")
@@ -892,12 +911,18 @@ class TestOptimizerBatteryProtection:
         """Multiple big consumers: use the lowest discharge override."""
         optimizer = _optimizer_for_tests()
         app1 = _make_appliance(
-            id="heat_pump", priority=1, nominal_power=1000.0,
-            is_big_consumer=True, battery_max_discharge_override=500.0,
+            id="heat_pump",
+            priority=1,
+            nominal_power=1000.0,
+            is_big_consumer=True,
+            battery_max_discharge_override=500.0,
         )
         app2 = _make_appliance(
-            id="pool_pump", priority=2, nominal_power=1000.0,
-            is_big_consumer=True, battery_max_discharge_override=300.0,
+            id="pool_pump",
+            priority=2,
+            nominal_power=1000.0,
+            is_big_consumer=True,
+            battery_max_discharge_override=300.0,
         )
         state1 = _make_state(id="heat_pump")
         state2 = _make_state(id="pool_pump")
@@ -923,6 +948,7 @@ class TestOptimizerBatteryProtection:
 # ---------------------------------------------------------------------------
 # TestOptimizerTariff
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerTariff:
     """Test tariff-aware allocation and opportunity cost."""
@@ -1011,7 +1037,10 @@ class TestOptimizerTariff:
         decision = result.decisions[0]
         # Should turn ON via grid supplement: export solar, buy from grid
         assert decision.action == Action.ON
-        assert "grid supplement" in decision.reason.lower() or "export solar" in decision.reason.lower()
+        assert (
+            "grid supplement" in decision.reason.lower()
+            or "export solar" in decision.reason.lower()
+        )
 
     def test_per_appliance_cheap_threshold_allows_supplement(self):
         """Per-appliance threshold (higher) allows grid supplement even when global would block."""
@@ -1099,6 +1128,7 @@ class TestOptimizerTariff:
 # TestOptimizerPlanInfluence
 # ---------------------------------------------------------------------------
 
+
 def _make_plan_with_entry(appliance_id: str = "app_1") -> Plan:
     """Create a Plan with an ON entry for the given appliance in the current time window."""
     now = datetime.now()
@@ -1122,7 +1152,7 @@ def _make_plan_with_entry(appliance_id: str = "app_1") -> Plan:
         entries=[entry],
         battery_target=BatteryTarget(
             target_soc=90.0,
-            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc),
+            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=UTC),
             strategy=BatteryStrategy.BALANCED,
         ),
         confidence=0.8,
@@ -1276,7 +1306,7 @@ class TestOptimizerPlanInfluence:
             entries=[entry],
             battery_target=BatteryTarget(
                 target_soc=90.0,
-                target_time=datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc),
+                target_time=datetime(2026, 3, 23, 7, 0, tzinfo=UTC),
                 strategy=BatteryStrategy.BALANCED,
             ),
             confidence=0.8,
@@ -1301,67 +1331,131 @@ class TestOptimizerPlanInfluence:
 # TestOptimizerDependencies
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerDependencies:
     """Tests for appliance dependency handling."""
 
     def _run(self, appliances, states, excess):
-        history = [PowerState(pv_production=5000, grid_export=excess, grid_import=max(-excess, 0),
-                              load_power=5000-excess, excess_power=excess, battery_soc=None,
-                              battery_power=None, ev_soc=None, timestamp=_utcnow())]
+        history = [
+            PowerState(
+                pv_production=5000,
+                grid_export=excess,
+                grid_import=max(-excess, 0),
+                load_power=5000 - excess,
+                excess_power=excess,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
+                timestamp=_utcnow(),
+            )
+        ]
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=history[0], appliances=appliances, appliance_states=states,
-            plan=Plan(created_at=_utcnow(), horizon=timedelta(hours=24), entries=[],
-                      battery_target=BatteryTarget(target_soc=100, target_time=_utcnow(),
-                                                    strategy=BatteryStrategy.BALANCED),
-                      confidence=0.5),
-            power_history=history, tariff=TariffInfo(current_price=0.30, feed_in_tariff=0.08,
-                                                      cheap_price_threshold=0.10,
-                                                      battery_charge_price_threshold=0.05),
+            power_state=history[0],
+            appliances=appliances,
+            appliance_states=states,
+            plan=Plan(
+                created_at=_utcnow(),
+                horizon=timedelta(hours=24),
+                entries=[],
+                battery_target=BatteryTarget(
+                    target_soc=100,
+                    target_time=_utcnow(),
+                    strategy=BatteryStrategy.BALANCED,
+                ),
+                confidence=0.5,
+            ),
+            power_history=history,
+            tariff=TariffInfo(
+                current_price=0.30,
+                feed_in_tariff=0.08,
+                cheap_price_threshold=0.10,
+                battery_charge_price_threshold=0.05,
+            ),
         )
         return {d.appliance_id: d for d in result.decisions}
 
     def test_dependent_starts_dependency_when_off(self):
         """When heat pump needs pool pump, both start if enough excess."""
-        pump = _make_appliance(id="pump", name="Pool Pump", priority=10, nominal_power=1000.0)
-        heater = _make_appliance(id="heater", name="Heat Pump", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
-        decisions = self._run([pump, heater],
-                              [_make_state(id="pump"), _make_state(id="heater")],
-                              excess=2700)
+        pump = _make_appliance(
+            id="pump", name="Pool Pump", priority=10, nominal_power=1000.0
+        )
+        heater = _make_appliance(
+            id="heater",
+            name="Heat Pump",
+            priority=3,
+            nominal_power=1500.0,
+            requires_appliance="pump",
+        )
+        decisions = self._run(
+            [pump, heater],
+            [_make_state(id="pump"), _make_state(id="heater")],
+            excess=2700,
+        )
         assert decisions["heater"].action == Action.ON
         assert decisions["pump"].action == Action.ON
 
     def test_not_enough_for_both(self):
         """If excess only covers dependent but not dep+dependent, neither starts."""
-        pump = _make_appliance(id="pump", name="Pool Pump", priority=10, nominal_power=1000.0)
-        heater = _make_appliance(id="heater", name="Heat Pump", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
-        decisions = self._run([pump, heater],
-                              [_make_state(id="pump"), _make_state(id="heater")],
-                              excess=2000)
+        pump = _make_appliance(
+            id="pump", name="Pool Pump", priority=10, nominal_power=1000.0
+        )
+        heater = _make_appliance(
+            id="heater",
+            name="Heat Pump",
+            priority=3,
+            nominal_power=1500.0,
+            requires_appliance="pump",
+        )
+        decisions = self._run(
+            [pump, heater],
+            [_make_state(id="pump"), _make_state(id="heater")],
+            excess=2000,
+        )
         assert decisions["heater"].action == Action.IDLE
 
     def test_dependency_already_on(self):
         """If dependency is already running, dependent just needs its own power."""
-        pump = _make_appliance(id="pump", name="Pool Pump", priority=10, nominal_power=1000.0)
-        heater = _make_appliance(id="heater", name="Heat Pump", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
-        decisions = self._run([pump, heater],
-                              [_make_state(id="pump", is_on=True, current_power=1000.0),
-                               _make_state(id="heater")],
-                              excess=1800)
+        pump = _make_appliance(
+            id="pump", name="Pool Pump", priority=10, nominal_power=1000.0
+        )
+        heater = _make_appliance(
+            id="heater",
+            name="Heat Pump",
+            priority=3,
+            nominal_power=1500.0,
+            requires_appliance="pump",
+        )
+        decisions = self._run(
+            [pump, heater],
+            [
+                _make_state(id="pump", is_on=True, current_power=1000.0),
+                _make_state(id="heater"),
+            ],
+            excess=1800,
+        )
         assert decisions["heater"].action == Action.ON
 
     def test_dependency_protected_from_shed(self):
         """Dependency not shed while dependent is running."""
-        pump = _make_appliance(id="pump", name="Pool Pump", priority=10, nominal_power=1000.0)
-        heater = _make_appliance(id="heater", name="Heat Pump", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
-        decisions = self._run([pump, heater],
-                              [_make_state(id="pump", is_on=True, current_power=1000.0),
-                               _make_state(id="heater", is_on=True, current_power=1500.0)],
-                              excess=-100)
+        pump = _make_appliance(
+            id="pump", name="Pool Pump", priority=10, nominal_power=1000.0
+        )
+        heater = _make_appliance(
+            id="heater",
+            name="Heat Pump",
+            priority=3,
+            nominal_power=1500.0,
+            requires_appliance="pump",
+        )
+        decisions = self._run(
+            [pump, heater],
+            [
+                _make_state(id="pump", is_on=True, current_power=1000.0),
+                _make_state(id="heater", is_on=True, current_power=1500.0),
+            ],
+            excess=-100,
+        )
         # Heater gets shed (lowest priority number but highest shed priority = -3 > -10)
         # Wait, shed sorts by -priority: pump=-10, heater=-3. -10 < -3 so pump is FIRST candidate.
         # But pump is protected. Then heater is shed.
@@ -1372,8 +1466,13 @@ class TestOptimizerDependencies:
 
     def test_dependency_disabled_blocks_dependent(self):
         """If dependency is not in config (disabled), dependent can't start."""
-        heater = _make_appliance(id="heater", name="Heat Pump", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
+        heater = _make_appliance(
+            id="heater",
+            name="Heat Pump",
+            priority=3,
+            nominal_power=1500.0,
+            requires_appliance="pump",
+        )
         decisions = self._run([heater], [_make_state(id="heater")], excess=3000)
         assert decisions["heater"].action == Action.IDLE
         assert "dependency" in decisions["heater"].reason.lower()
@@ -1383,20 +1482,28 @@ class TestOptimizerDependencies:
 # TestOptimizerPreemption
 # ---------------------------------------------------------------------------
 
+
 class TestOptimizerPreemption:
     """Tests for Phase 2.5 PREEMPT - shed lower-priority to start higher-priority."""
 
     def test_preempt_lower_for_higher_priority(self):
         """Lower-priority running appliance shed to start higher-priority one."""
         app_a = _make_appliance(id="low", name="Low", priority=5, nominal_power=1000.0)
-        app_b = _make_appliance(id="high", name="High", priority=1, nominal_power=2000.0)
+        app_b = _make_appliance(
+            id="high", name="High", priority=1, nominal_power=2000.0
+        )
         state_a = _make_state(id="low", is_on=True, current_power=1000.0)
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["high"].action == Action.ON
         assert decisions["low"].action == Action.OFF
@@ -1410,56 +1517,88 @@ class TestOptimizerPreemption:
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=3000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["high"].action == Action.ON
         assert decisions["low"].action == Action.ON
 
     def test_no_preempt_on_only(self):
         """on_only appliances are never preempted."""
-        app_a = _make_appliance(id="low", priority=5, nominal_power=1000.0, on_only=True)
+        app_a = _make_appliance(
+            id="low", priority=5, nominal_power=1000.0, on_only=True
+        )
         app_b = _make_appliance(id="high", priority=1, nominal_power=2000.0)
         state_a = _make_state(id="low", is_on=True, current_power=1000.0)
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["low"].action == Action.ON
         assert decisions["high"].action == Action.IDLE
 
     def test_no_preempt_overridden(self):
         """Overridden appliances are never preempted."""
-        app_a = _make_appliance(id="low", priority=5, nominal_power=1000.0, override_active=True)
+        app_a = _make_appliance(
+            id="low", priority=5, nominal_power=1000.0, override_active=True
+        )
         app_b = _make_appliance(id="high", priority=1, nominal_power=2000.0)
         state_a = _make_state(id="low", is_on=True, current_power=1000.0)
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["low"].action == Action.ON
         assert decisions["high"].action == Action.IDLE
 
     def test_no_preempt_min_runtime_unmet(self):
         """Appliances with unmet min_daily_runtime not preempted."""
-        app_a = _make_appliance(id="low", priority=5, nominal_power=1000.0,
-                                min_daily_runtime=timedelta(hours=2))
+        app_a = _make_appliance(
+            id="low",
+            priority=5,
+            nominal_power=1000.0,
+            min_daily_runtime=timedelta(hours=2),
+        )
         app_b = _make_appliance(id="high", priority=1, nominal_power=2000.0)
-        state_a = _make_state(id="low", is_on=True, current_power=1000.0,
-                              runtime_today=timedelta(minutes=30))
+        state_a = _make_state(
+            id="low",
+            is_on=True,
+            current_power=1000.0,
+            runtime_today=timedelta(minutes=30),
+        )
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["low"].action == Action.ON
         assert decisions["high"].action == Action.IDLE
@@ -1474,12 +1613,19 @@ class TestOptimizerPreemption:
         state_c = _make_state(id="high", is_on=False)
         power = _make_power(excess=2000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b, app_c],
-            appliance_states=[state_a, state_b, state_c], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b, app_c],
+            appliance_states=[state_a, state_b, state_c],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["high"].action == Action.ON
-        preempted = sum(1 for d in [decisions["low1"], decisions["low2"]] if d.action == Action.OFF)
+        preempted = sum(
+            1 for d in [decisions["low1"], decisions["low2"]] if d.action == Action.OFF
+        )
         assert preempted >= 1
 
     def test_no_preempt_not_enough_even_with_shed(self):
@@ -1490,9 +1636,14 @@ class TestOptimizerPreemption:
         state_b = _make_state(id="high", is_on=False)
         power = _make_power(excess=1000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[app_a, app_b],
-            appliance_states=[state_a, state_b], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[app_a, app_b],
+            appliance_states=[state_a, state_b],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["low"].action == Action.ON
         assert decisions["high"].action == Action.IDLE
@@ -1500,17 +1651,23 @@ class TestOptimizerPreemption:
     def test_no_preempt_dependency_protected(self):
         """Dependency-protected appliances not preempted."""
         pump = _make_appliance(id="pump", priority=5, nominal_power=1000.0)
-        heater = _make_appliance(id="heater", priority=3, nominal_power=1500.0,
-                                  requires_appliance="pump")
+        heater = _make_appliance(
+            id="heater", priority=3, nominal_power=1500.0, requires_appliance="pump"
+        )
         big = _make_appliance(id="big", priority=1, nominal_power=3000.0)
         state_pump = _make_state(id="pump", is_on=True, current_power=1000.0)
         state_heater = _make_state(id="heater", is_on=True, current_power=1500.0)
         state_big = _make_state(id="big", is_on=False)
         power = _make_power(excess=1000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
-        result = opt.optimize(power_state=power, appliances=[pump, heater, big],
-            appliance_states=[state_pump, state_heater, state_big], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff())
+        result = opt.optimize(
+            power_state=power,
+            appliances=[pump, heater, big],
+            appliance_states=[state_pump, state_heater, state_big],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["pump"].action in (Action.ON, Action.SET_CURRENT)
 
@@ -1521,28 +1678,37 @@ class TestFractionalCurrent:
     def test_step_floor_0_1(self):
         """step=0.1 preserves 6.7A as 6.7A."""
         from custom_components.pv_excess_control.optimizer import _step_floor
+
         assert _step_floor(6.7, 0.1) == pytest.approx(6.7, abs=0.01)
 
     def test_step_floor_0_5(self):
         """step=0.5 rounds 6.7A down to 6.5A."""
         from custom_components.pv_excess_control.optimizer import _step_floor
+
         assert _step_floor(6.7, 0.5) == pytest.approx(6.5, abs=0.01)
 
     def test_step_floor_1_0(self):
         """step=1.0 rounds 6.7A down to 6.0A (old integer behavior)."""
         from custom_components.pv_excess_control.optimizer import _step_floor
+
         assert _step_floor(6.7, 1.0) == pytest.approx(6.0, abs=0.01)
 
     def test_step_floor_0_3(self):
         """step=0.3 rounds 10.0A down to 9.9A."""
         from custom_components.pv_excess_control.optimizer import _step_floor
+
         assert _step_floor(10.0, 0.3) == pytest.approx(9.9, abs=0.01)
 
     def test_allocate_dynamic_fractional_current(self):
         """OFF appliance with step=0.1 gets fractional current."""
         app = _make_appliance(
-            id="charger", dynamic_current=True, current_entity="number.charger_current",
-            min_current=6.0, max_current=16.0, phases=1, nominal_power=1380,
+            id="charger",
+            dynamic_current=True,
+            current_entity="number.charger_current",
+            min_current=6.0,
+            max_current=16.0,
+            phases=1,
+            nominal_power=1380,
             current_step=0.1,
         )
         state = _make_state(id="charger", is_on=False)
@@ -1550,8 +1716,12 @@ class TestFractionalCurrent:
         power = _make_power(excess=1550.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.SET_CURRENT
@@ -1560,16 +1730,25 @@ class TestFractionalCurrent:
     def test_allocate_dynamic_step_1_gives_integer(self):
         """step=1.0 preserves old integer behavior."""
         app = _make_appliance(
-            id="charger", dynamic_current=True, current_entity="number.charger_current",
-            min_current=6.0, max_current=16.0, phases=1, nominal_power=1380,
+            id="charger",
+            dynamic_current=True,
+            current_entity="number.charger_current",
+            min_current=6.0,
+            max_current=16.0,
+            phases=1,
+            nominal_power=1380,
             current_step=1.0,
         )
         state = _make_state(id="charger", is_on=False)
         power = _make_power(excess=1550.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.SET_CURRENT
@@ -1578,8 +1757,13 @@ class TestFractionalCurrent:
     def test_shed_dynamic_fractional_current(self):
         """SHED reduces current using step size."""
         app = _make_appliance(
-            id="charger", dynamic_current=True, current_entity="number.charger_current",
-            min_current=6.0, max_current=16.0, phases=1, nominal_power=2300,
+            id="charger",
+            dynamic_current=True,
+            current_entity="number.charger_current",
+            min_current=6.0,
+            max_current=16.0,
+            phases=1,
+            nominal_power=2300,
             current_step=0.5,
         )
         state = _make_state(id="charger", is_on=True, current_power=2300.0)
@@ -1589,8 +1773,12 @@ class TestFractionalCurrent:
         power = _make_power(excess=-500.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.SET_CURRENT
@@ -1602,16 +1790,23 @@ class TestPreemptionConfig:
 
     def test_preemption_disabled_globally(self):
         """When enable_preemption=False, no preemption occurs even when it would help."""
-        app_low = _make_appliance(id="low", name="Low", priority=5, nominal_power=1000.0)
-        app_high = _make_appliance(id="high", name="High", priority=1, nominal_power=2000.0)
+        app_low = _make_appliance(
+            id="low", name="Low", priority=5, nominal_power=1000.0
+        )
+        app_high = _make_appliance(
+            id="high", name="High", priority=1, nominal_power=2000.0
+        )
         state_low = _make_state(id="low", is_on=True, current_power=1000.0)
         state_high = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230, enable_preemption=False)
         result = opt.optimize(
-            power_state=power, appliances=[app_low, app_high],
-            appliance_states=[state_low, state_high], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app_low, app_high],
+            appliance_states=[state_low, state_high],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         decisions = {d.appliance_id: d for d in result.decisions}
         # Low stays ON, high stays IDLE — no preemption
@@ -1620,16 +1815,23 @@ class TestPreemptionConfig:
 
     def test_preemption_enabled_globally(self):
         """When enable_preemption=True (default), preemption works as before."""
-        app_low = _make_appliance(id="low", name="Low", priority=5, nominal_power=1000.0)
-        app_high = _make_appliance(id="high", name="High", priority=1, nominal_power=2000.0)
+        app_low = _make_appliance(
+            id="low", name="Low", priority=5, nominal_power=1000.0
+        )
+        app_high = _make_appliance(
+            id="high", name="High", priority=1, nominal_power=2000.0
+        )
         state_low = _make_state(id="low", is_on=True, current_power=1000.0)
         state_high = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230, enable_preemption=True)
         result = opt.optimize(
-            power_state=power, appliances=[app_low, app_high],
-            appliance_states=[state_low, state_high], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app_low, app_high],
+            appliance_states=[state_low, state_high],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["high"].action == Action.ON
@@ -1638,18 +1840,26 @@ class TestPreemptionConfig:
     def test_protect_from_preemption(self):
         """Appliance with protect_from_preemption=True is never shed for higher-priority."""
         app_low = _make_appliance(
-            id="low", name="Low", priority=5, nominal_power=1000.0,
+            id="low",
+            name="Low",
+            priority=5,
+            nominal_power=1000.0,
             protect_from_preemption=True,
         )
-        app_high = _make_appliance(id="high", name="High", priority=1, nominal_power=2000.0)
+        app_high = _make_appliance(
+            id="high", name="High", priority=1, nominal_power=2000.0
+        )
         state_low = _make_state(id="low", is_on=True, current_power=1000.0)
         state_high = _make_state(id="high", is_on=False)
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230, enable_preemption=True)
         result = opt.optimize(
-            power_state=power, appliances=[app_low, app_high],
-            appliance_states=[state_low, state_high], plan=_empty_plan(),
-            power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app_low, app_high],
+            appliance_states=[state_low, state_high],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         decisions = {d.appliance_id: d for d in result.decisions}
         # Low is protected — stays ON, high stays IDLE
@@ -1659,24 +1869,37 @@ class TestPreemptionConfig:
     def test_protect_from_preemption_others_still_preemptable(self):
         """Protected appliance is skipped but unprotected ones can still be preempted."""
         app_protected = _make_appliance(
-            id="protected", name="Protected", priority=10, nominal_power=500.0,
+            id="protected",
+            name="Protected",
+            priority=10,
+            nominal_power=500.0,
             protect_from_preemption=True,
         )
         app_unprotected = _make_appliance(
-            id="unprotected", name="Unprotected", priority=8, nominal_power=1000.0,
+            id="unprotected",
+            name="Unprotected",
+            priority=8,
+            nominal_power=1000.0,
         )
-        app_high = _make_appliance(id="high", name="High", priority=1, nominal_power=2000.0)
+        app_high = _make_appliance(
+            id="high", name="High", priority=1, nominal_power=2000.0
+        )
         state_protected = _make_state(id="protected", is_on=True, current_power=500.0)
-        state_unprotected = _make_state(id="unprotected", is_on=True, current_power=1000.0)
+        state_unprotected = _make_state(
+            id="unprotected", is_on=True, current_power=1000.0
+        )
         state_high = _make_state(id="high", is_on=False)
         # 1500W excess: not enough for 2000W high-priority.
         # Unprotected frees 1000W -> 1500+1000=2500 >= 2200 (2000+200 threshold) -> preempt
         power = _make_power(excess=1500.0)
         opt = _optimizer_for_tests(grid_voltage=230, enable_preemption=True)
         result = opt.optimize(
-            power_state=power, appliances=[app_protected, app_unprotected, app_high],
+            power_state=power,
+            appliances=[app_protected, app_unprotected, app_high],
             appliance_states=[state_protected, state_unprotected, state_high],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         decisions = {d.appliance_id: d for d in result.decisions}
         assert decisions["high"].action == Action.ON
@@ -1694,8 +1917,12 @@ class TestMaxDailyActivations:
         power = _make_power(excess=2000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.IDLE
@@ -1708,8 +1935,12 @@ class TestMaxDailyActivations:
         power = _make_power(excess=2000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.ON
@@ -1717,25 +1948,37 @@ class TestMaxDailyActivations:
     def test_on_appliance_at_max_activations_stays_on(self):
         """ON appliance at max activations is NOT affected — stays ON."""
         app = _make_appliance(id="pump", nominal_power=1000.0, max_daily_activations=3)
-        state = _make_state(id="pump", is_on=True, current_power=1000.0, activations_today=3)
+        state = _make_state(
+            id="pump", is_on=True, current_power=1000.0, activations_today=3
+        )
         power = _make_power(excess=2000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.ON
 
     def test_no_limit_when_max_activations_none(self):
         """max_daily_activations=None means unlimited — no limit applied."""
-        app = _make_appliance(id="pump", nominal_power=1000.0, max_daily_activations=None)
+        app = _make_appliance(
+            id="pump", nominal_power=1000.0, max_daily_activations=None
+        )
         state = _make_state(id="pump", is_on=False, activations_today=999)
         power = _make_power(excess=2000.0)
         opt = _optimizer_for_tests(grid_voltage=230)
         result = opt.optimize(
-            power_state=power, appliances=[app], appliance_states=[state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[app],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
         d = result.decisions[0]
         assert d.action == Action.ON
@@ -1744,6 +1987,7 @@ class TestMaxDailyActivations:
 # ---------------------------------------------------------------------------
 # TestOnThreshold
 # ---------------------------------------------------------------------------
+
 
 class TestOnThreshold:
     """Tests for per-appliance activation buffer (on_threshold)."""
@@ -1885,6 +2129,7 @@ class TestOnThreshold:
 # TestOffThreshold
 # ---------------------------------------------------------------------------
 
+
 class TestOffThreshold:
     """Tests for global configurable shed threshold (off_threshold)."""
 
@@ -1966,28 +2211,40 @@ class TestBypassesCooldownFlag:
         from datetime import timedelta as td
 
         from custom_components.pv_excess_control.models import (
-            BatteryTarget, BatteryStrategy, Plan, PowerState, TariffInfo,
+            BatteryTarget,
+            BatteryStrategy,
+            Plan,
+            PowerState,
+            TariffInfo,
         )
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         power_state = PowerState(
-            pv_production=3000, grid_export=0, grid_import=0,
-            load_power=500, excess_power=2500,
-            battery_soc=None, battery_power=None, ev_soc=None,
+            pv_production=3000,
+            grid_export=0,
+            grid_import=0,
+            load_power=500,
+            excess_power=2500,
+            battery_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 12, 0, 0),
         )
         plan = Plan(
             created_at=datetime(2026, 4, 6, 11, 0, 0),
-            horizon=td(hours=8), entries=[],
+            horizon=td(hours=8),
+            entries=[],
             battery_target=BatteryTarget(
-                target_soc=80, target_time=datetime(2026, 4, 6, 18, 0, 0),
+                target_soc=80,
+                target_time=datetime(2026, 4, 6, 18, 0, 0),
                 strategy=BatteryStrategy.BALANCED,
             ),
             confidence=0.75,
         )
         tariff = TariffInfo(
-            current_price=0.20, feed_in_tariff=0.08,
-            cheap_price_threshold=0.15, battery_charge_price_threshold=0.10,
+            current_price=0.20,
+            feed_in_tariff=0.08,
+            cheap_price_threshold=0.15,
+            battery_charge_price_threshold=0.10,
         )
         return {
             "optimizer": _optimizer_for_tests(),
@@ -2000,17 +2257,28 @@ class TestBypassesCooldownFlag:
         from custom_components.pv_excess_control.models import ApplianceConfig
 
         defaults = dict(
-            id="app1", name="Test", entity_id="switch.test",
-            priority=100, phases=1, nominal_power=1000.0, actual_power_entity=None,
-            dynamic_current=False, current_entity=None,
-            min_current=6.0, max_current=16.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
+            id="app1",
+            name="Test",
+            entity_id="switch.test",
+            priority=100,
+            phases=1,
+            nominal_power=1000.0,
+            actual_power_entity=None,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=6.0,
+            max_current=16.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
             on_only=False,
-            min_daily_runtime=None, max_daily_runtime=None,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
             schedule_deadline=None,
             switch_interval=300,
-            allow_grid_supplement=False, max_grid_power=None,
+            allow_grid_supplement=False,
+            max_grid_power=None,
         )
         defaults.update(overrides)
         return ApplianceConfig(**defaults)
@@ -2111,6 +2379,7 @@ class TestBypassesCooldownFlag:
             assert decision.bypasses_cooldown is True
         else:
             import pytest
+
             pytest.skip(
                 "Wall-clock is within the configured 03:00-04:00 window; "
                 "outside-window branch not exercised."
@@ -2119,17 +2388,20 @@ class TestBypassesCooldownFlag:
     def test_battery_soc_protection_sets_flag(self) -> None:
         from custom_components.pv_excess_control.const import Action
         from custom_components.pv_excess_control.models import PowerState
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         appliance = self._make_appliance()
         state = self._make_state(is_on=True, current_power=500.0)
         ctx = self._base_ctx()
         # Override power_state to include a battery_soc below threshold
         power_state = PowerState(
-            pv_production=3000, grid_export=0, grid_import=0,
-            load_power=500, excess_power=2500,
+            pv_production=3000,
+            grid_export=0,
+            grid_import=0,
+            load_power=500,
+            excess_power=2500,
             battery_soc=25.0,  # below 30% min
-            battery_power=None, ev_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 12, 0, 0),
         )
         result = ctx["optimizer"].optimize(
@@ -2170,9 +2442,14 @@ class TestBypassesCooldownFlag:
         ctx = self._base_ctx()
         # Override power_state to zero excess so allocation fails
         zero_excess = PowerState(
-            pv_production=500, grid_export=0, grid_import=0,
-            load_power=500, excess_power=0,
-            battery_soc=None, battery_power=None, ev_soc=None,
+            pv_production=500,
+            grid_export=0,
+            grid_import=0,
+            load_power=500,
+            excess_power=0,
+            battery_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 12, 0, 0),
         )
         result = ctx["optimizer"].optimize(
@@ -2196,22 +2473,38 @@ class TestAlreadyOnReasonStrings:
         from datetime import timedelta as td
 
         from custom_components.pv_excess_control.models import (
-            ApplianceConfig, ApplianceState, BatteryTarget, BatteryStrategy,
-            Plan, PowerState, TariffInfo,
+            ApplianceConfig,
+            ApplianceState,
+            BatteryTarget,
+            BatteryStrategy,
+            Plan,
+            PowerState,
+            TariffInfo,
         )
 
         appliance = ApplianceConfig(
-            id="app1", name="Test", entity_id="switch.test",
-            priority=100, phases=1, nominal_power=2000.0, actual_power_entity=None,
-            dynamic_current=False, current_entity=None,
-            min_current=6.0, max_current=16.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
+            id="app1",
+            name="Test",
+            entity_id="switch.test",
+            priority=100,
+            phases=1,
+            nominal_power=2000.0,
+            actual_power_entity=None,
+            dynamic_current=False,
+            current_entity=None,
+            min_current=6.0,
+            max_current=16.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
             on_only=False,
-            min_daily_runtime=None, max_daily_runtime=None,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
             schedule_deadline=None,
             switch_interval=300,
-            allow_grid_supplement=False, max_grid_power=None,
+            allow_grid_supplement=False,
+            max_grid_power=None,
         )
         state = ApplianceState(
             appliance_id="app1",
@@ -2224,31 +2517,42 @@ class TestAlreadyOnReasonStrings:
             ev_connected=None,
         )
         power_state = PowerState(
-            pv_production=3000, grid_export=0, grid_import=0,
-            load_power=2340, excess_power=720,
-            battery_soc=None, battery_power=None, ev_soc=None,
+            pv_production=3000,
+            grid_export=0,
+            grid_import=0,
+            load_power=2340,
+            excess_power=720,
+            battery_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 12, 0, 0),
         )
         plan = Plan(
             created_at=datetime(2026, 4, 6, 11, 0, 0),
-            horizon=td(hours=8), entries=[],
+            horizon=td(hours=8),
+            entries=[],
             battery_target=BatteryTarget(
-                target_soc=80, target_time=datetime(2026, 4, 6, 18, 0, 0),
+                target_soc=80,
+                target_time=datetime(2026, 4, 6, 18, 0, 0),
                 strategy=BatteryStrategy.BALANCED,
             ),
             confidence=0.75,
         )
         tariff = TariffInfo(
-            current_price=0.20, feed_in_tariff=0.08,
-            cheap_price_threshold=0.15, battery_charge_price_threshold=0.10,
+            current_price=0.20,
+            feed_in_tariff=0.08,
+            cheap_price_threshold=0.15,
+            battery_charge_price_threshold=0.10,
         )
         return {
-            "appliance": appliance, "state": state,
-            "power_state": power_state, "plan": plan, "tariff": tariff,
+            "appliance": appliance,
+            "state": state,
+            "power_state": power_state,
+            "plan": plan,
+            "tariff": tariff,
         }
 
     def test_standard_appliance_already_on_shows_headroom(self) -> None:
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         kwargs = self._base_kwargs()
         opt = _optimizer_for_tests(off_threshold=-100)
@@ -2268,24 +2572,34 @@ class TestAlreadyOnReasonStrings:
     def test_dynamic_appliance_already_on_shows_amps_and_headroom(self) -> None:
         from datetime import timedelta as td
         from custom_components.pv_excess_control.models import (
-            ApplianceConfig, ApplianceState,
+            ApplianceConfig,
+            ApplianceState,
         )
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         kwargs = self._base_kwargs()
         dyn = ApplianceConfig(
-            id="app1", name="EV", entity_id="switch.ev",
-            priority=100, phases=3, nominal_power=11000.0,
+            id="app1",
+            name="EV",
+            entity_id="switch.ev",
+            priority=100,
+            phases=3,
+            nominal_power=11000.0,
             actual_power_entity=None,
-            dynamic_current=True, current_entity="number.ev_current",
-            min_current=6.0, max_current=16.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
+            dynamic_current=True,
+            current_entity="number.ev_current",
+            min_current=6.0,
+            max_current=16.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
             on_only=False,
-            min_daily_runtime=None, max_daily_runtime=None,
+            min_daily_runtime=None,
+            max_daily_runtime=None,
             schedule_deadline=None,
             switch_interval=300,
-            allow_grid_supplement=False, max_grid_power=None,
+            allow_grid_supplement=False,
+            max_grid_power=None,
         )
         state = ApplianceState(
             appliance_id="app1",
@@ -2301,10 +2615,16 @@ class TestAlreadyOnReasonStrings:
         # Use off_threshold=-5000 so SHED doesn't fire at excess=-3000W
         # available = -3000 + 6900 = 3900 < 4140 → target < min_current → "staying on" branch
         from custom_components.pv_excess_control.models import PowerState
+
         tiny_excess = PowerState(
-            pv_production=3900, grid_export=0, grid_import=0,
-            load_power=6900, excess_power=-3000,
-            battery_soc=None, battery_power=None, ev_soc=None,
+            pv_production=3900,
+            grid_export=0,
+            grid_import=0,
+            load_power=6900,
+            excess_power=-3000,
+            battery_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 12, 0, 0),
         )
         opt = _optimizer_for_tests(off_threshold=-5000)
@@ -2344,9 +2664,7 @@ class TestStayingOnHelpersDirect:
             off_threshold=-100,
             instant_budget=720,
         )
-        assert text == (
-            "Staying on (2340W drawn) - shed at -100W (current: +720W)"
-        )
+        assert text == ("Staying on (2340W drawn) - shed at -100W (current: +720W)")
 
     def test_standard_shed_imminent_when_remaining_below_threshold(self) -> None:
         from custom_components.pv_excess_control.optimizer import (
@@ -2387,8 +2705,7 @@ class TestStayingOnHelpersDirect:
             instant_budget=720,
         )
         assert text == (
-            "Staying on at 10.0A (6900W drawn) - "
-            "shed at -100W (current: +720W)"
+            "Staying on at 10.0A (6900W drawn) - shed at -100W (current: +720W)"
         )
 
     def test_dynamic_shed_imminent(self) -> None:
@@ -2417,9 +2734,7 @@ class TestStayingOnHelpersDirect:
             instant_budget=720,
         )
         # No amperage prefix → standard format
-        assert text == (
-            "Staying on (2340W drawn) - shed at -100W (current: +720W)"
-        )
+        assert text == ("Staying on (2340W drawn) - shed at -100W (current: +720W)")
         assert "A " not in text  # no amperage prefix
 
 
@@ -2441,12 +2756,18 @@ class TestDeadlineReasonStrings:
         from datetime import timedelta as td, time
 
         from custom_components.pv_excess_control.models import (
-            ApplianceConfig, ApplianceState, BatteryTarget, BatteryStrategy,
-            Plan, PowerState, TariffInfo,
+            ApplianceConfig,
+            ApplianceState,
+            BatteryTarget,
+            BatteryStrategy,
+            Plan,
+            PowerState,
+            TariffInfo,
         )
 
         appliance = ApplianceConfig(
-            id="app1", name="Pool",
+            id="app1",
+            name="Pool",
             entity_id="switch.pool",
             priority=100,
             phases=3 if dynamic else 1,
@@ -2454,9 +2775,12 @@ class TestDeadlineReasonStrings:
             actual_power_entity=None,
             dynamic_current=dynamic,
             current_entity=("number.ev_current" if dynamic else None),
-            min_current=6.0, max_current=16.0,
-            ev_soc_entity=None, ev_connected_entity=None,
-            is_big_consumer=False, battery_max_discharge_override=None,
+            min_current=6.0,
+            max_current=16.0,
+            ev_soc_entity=None,
+            ev_connected_entity=None,
+            is_big_consumer=False,
+            battery_max_discharge_override=None,
             on_only=False,
             # Oversized so `remaining_runtime * 1.1` always covers
             # `time_until_deadline` (<= 86400s) regardless of wall time
@@ -2464,7 +2788,8 @@ class TestDeadlineReasonStrings:
             max_daily_runtime=None,
             schedule_deadline=time(14, 0),
             switch_interval=300,
-            allow_grid_supplement=False, max_grid_power=None,
+            allow_grid_supplement=False,
+            max_grid_power=None,
         )
         state = ApplianceState(
             appliance_id="app1",
@@ -2479,27 +2804,39 @@ class TestDeadlineReasonStrings:
         # Force insufficient excess so the allocator falls through to the
         # deadline must-run branch.
         power_state = PowerState(
-            pv_production=200, grid_export=0, grid_import=800,
-            load_power=1000, excess_power=-800,
-            battery_soc=None, battery_power=None, ev_soc=None,
+            pv_production=200,
+            grid_export=0,
+            grid_import=800,
+            load_power=1000,
+            excess_power=-800,
+            battery_soc=None,
+            battery_power=None,
+            ev_soc=None,
             timestamp=datetime(2026, 4, 6, 13, 0, 0),
         )
         plan = Plan(
             created_at=datetime(2026, 4, 6, 11, 0, 0),
-            horizon=td(hours=8), entries=[],
+            horizon=td(hours=8),
+            entries=[],
             battery_target=BatteryTarget(
-                target_soc=80, target_time=datetime(2026, 4, 6, 18, 0, 0),
+                target_soc=80,
+                target_time=datetime(2026, 4, 6, 18, 0, 0),
                 strategy=BatteryStrategy.BALANCED,
             ),
             confidence=0.75,
         )
         tariff = TariffInfo(
-            current_price=0.20, feed_in_tariff=0.08,
-            cheap_price_threshold=0.15, battery_charge_price_threshold=0.10,
+            current_price=0.20,
+            feed_in_tariff=0.08,
+            cheap_price_threshold=0.15,
+            battery_charge_price_threshold=0.10,
         )
         return {
-            "appliance": appliance, "state": state,
-            "power_state": power_state, "plan": plan, "tariff": tariff,
+            "appliance": appliance,
+            "state": state,
+            "power_state": power_state,
+            "plan": plan,
+            "tariff": tariff,
         }
 
     def _assert_new_deadline_format(self, reason: str) -> None:
@@ -2518,7 +2855,6 @@ class TestDeadlineReasonStrings:
 
     def test_standard_deadline_has_human_readable_format(self) -> None:
         """non-dynamic deadline must-run path."""
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         fx = self._build_fixture(dynamic=False)
         opt = _optimizer_for_tests()
@@ -2535,7 +2871,6 @@ class TestDeadlineReasonStrings:
 
     def test_dynamic_deadline_has_human_readable_format(self) -> None:
         """dynamic current deadline must-run path."""
-        from custom_components.pv_excess_control.optimizer import Optimizer
 
         fx = self._build_fixture(dynamic=True)
         opt = _optimizer_for_tests()
@@ -2555,14 +2890,12 @@ class TestDeadlineReasonStrings:
         treats it as tomorrow and the reason string says so."""
         from datetime import time
 
-        from custom_components.pv_excess_control.optimizer import Optimizer
-
         fx = self._build_fixture(dynamic=False)
         # Override schedule_deadline to 00:00 — guaranteed to be ≤ any
         # current wall-clock time, so the overnight branch always fires.
         appliance = fx["appliance"]
-        from custom_components.pv_excess_control.models import ApplianceConfig
         from dataclasses import replace
+
         midnight_appliance = replace(appliance, schedule_deadline=time(0, 0))
 
         opt = _optimizer_for_tests()
@@ -2586,6 +2919,7 @@ class TestDeadlineReasonStrings:
 # TestDeadlineMustRunShedProtection
 # ---------------------------------------------------------------------------
 
+
 class TestDeadlineMustRunShedProtection:
     """Deadline must-run decisions bypass cooldown and are excluded from SHED."""
 
@@ -2598,9 +2932,16 @@ class TestDeadlineMustRunShedProtection:
         )
         from dataclasses import replace
         from datetime import time as dt_time
-        appliance = replace(appliance, schedule_deadline=dt_time(14, 0), min_daily_runtime=timedelta(hours=25))
 
-        state = _make_state(id="heater", is_on=False, current_power=0.0, runtime_today=timedelta())
+        appliance = replace(
+            appliance,
+            schedule_deadline=dt_time(14, 0),
+            min_daily_runtime=timedelta(hours=25),
+        )
+
+        state = _make_state(
+            id="heater", is_on=False, current_power=0.0, runtime_today=timedelta()
+        )
         power = _make_power(excess=-800.0)
         opt = _optimizer_for_tests()
         result = opt.optimize(
@@ -2630,9 +2971,16 @@ class TestDeadlineMustRunShedProtection:
         )
         from dataclasses import replace
         from datetime import time as dt_time
-        appliance = replace(appliance, schedule_deadline=dt_time(14, 0), min_daily_runtime=timedelta(hours=25))
 
-        state = _make_state(id="ev", is_on=False, current_power=0.0, runtime_today=timedelta())
+        appliance = replace(
+            appliance,
+            schedule_deadline=dt_time(14, 0),
+            min_daily_runtime=timedelta(hours=25),
+        )
+
+        state = _make_state(
+            id="ev", is_on=False, current_power=0.0, runtime_today=timedelta()
+        )
         power = _make_power(excess=-800.0)
         opt = _optimizer_for_tests()
         result = opt.optimize(
@@ -2662,12 +3010,21 @@ class TestDeadlineMustRunShedProtection:
         )
         from dataclasses import replace
         from datetime import time as dt_time
-        heater = replace(heater, schedule_deadline=dt_time(14, 0), min_daily_runtime=timedelta(hours=25))
+
+        heater = replace(
+            heater,
+            schedule_deadline=dt_time(14, 0),
+            min_daily_runtime=timedelta(hours=25),
+        )
 
         lamp = _make_appliance(id="lamp", nominal_power=200.0, priority=5)
 
-        heater_state = _make_state(id="heater", is_on=False, current_power=0.0, runtime_today=timedelta())
-        lamp_state = _make_state(id="lamp", is_on=True, current_power=200.0, runtime_today=timedelta(hours=1))
+        heater_state = _make_state(
+            id="heater", is_on=False, current_power=0.0, runtime_today=timedelta()
+        )
+        lamp_state = _make_state(
+            id="lamp", is_on=True, current_power=200.0, runtime_today=timedelta(hours=1)
+        )
 
         power = _make_power(excess=-5000.0)
         opt = _optimizer_for_tests()
@@ -2692,6 +3049,7 @@ class TestDeadlineMustRunShedProtection:
 # ---------------------------------------------------------------------------
 # TestCalculateAverageExcess
 # ---------------------------------------------------------------------------
+
 
 class TestCalculateAverageExcess:
     """Phase 1 ASSESS buffer filtering + min-sample threshold.
@@ -2795,6 +3153,7 @@ class TestCalculateAverageExcess:
 # TestSafetyOnlyPath
 # ---------------------------------------------------------------------------
 
+
 class TestSafetyOnlyPath:
     """Optimizer behaviour when Phase 1 ASSESS returns None.
 
@@ -2806,9 +3165,14 @@ class TestSafetyOnlyPath:
 
     def _none_excess_power_state(self) -> PowerState:
         return PowerState(
-            pv_production=None, grid_export=None, grid_import=None,
-            load_power=None, excess_power=None,
-            battery_soc=50.0, battery_power=0.0, ev_soc=None,
+            pv_production=None,
+            grid_export=None,
+            grid_import=None,
+            load_power=None,
+            excess_power=None,
+            battery_soc=50.0,
+            battery_power=0.0,
+            ev_soc=None,
             timestamp=datetime.now(),
         )
 
@@ -2818,19 +3182,27 @@ class TestSafetyOnlyPath:
     def test_optimizer_none_excess_runs_safety_only(self):
         """An appliance past max_daily_runtime still gets OFF; no allocations fire."""
         laundry = _make_appliance(
-            id="laundry", priority=500, nominal_power=2000.0,
+            id="laundry",
+            priority=500,
+            nominal_power=2000.0,
             max_daily_runtime=None,
         )
         pool = _make_appliance(
-            id="pool", priority=600, nominal_power=1500.0,
+            id="pool",
+            priority=600,
+            nominal_power=1500.0,
             max_daily_runtime=timedelta(hours=2),
         )
         laundry_state = _make_state(
-            id="laundry", is_on=False, current_power=0.0,
+            id="laundry",
+            is_on=False,
+            current_power=0.0,
             runtime_today=timedelta(0),
         )
         pool_state = _make_state(
-            id="pool", is_on=True, current_power=1500.0,
+            id="pool",
+            is_on=True,
+            current_power=1500.0,
             runtime_today=timedelta(hours=3),  # past the limit
         )
 
@@ -2850,23 +3222,34 @@ class TestSafetyOnlyPath:
 
         assert not any(
             d.action in (Action.ON, Action.SET_CURRENT)
-            for d in result.decisions if d.appliance_id == "laundry"
+            for d in result.decisions
+            if d.appliance_id == "laundry"
         ), "laundry should not be allocated in the safety-only path"
 
     def test_optimizer_none_excess_phase4_still_runs(self):
         """Phase 4 (battery discharge protection) runs even when excess is None."""
         big = _make_appliance(
-            id="ev", priority=500, nominal_power=7000.0,
-            is_big_consumer=True, battery_max_discharge_override=500.0,
+            id="ev",
+            priority=500,
+            nominal_power=7000.0,
+            is_big_consumer=True,
+            battery_max_discharge_override=500.0,
         )
         big_state = _make_state(
-            id="ev", is_on=True, current_power=7000.0,
+            id="ev",
+            is_on=True,
+            current_power=7000.0,
             runtime_today=timedelta(0),
         )
         ps = PowerState(
-            pv_production=None, grid_export=None, grid_import=None,
-            load_power=None, excess_power=None,
-            battery_soc=15.0, battery_power=-1000.0, ev_soc=None,
+            pv_production=None,
+            grid_export=None,
+            grid_import=None,
+            load_power=None,
+            excess_power=None,
+            battery_soc=15.0,
+            battery_power=-1000.0,
+            ev_soc=None,
             timestamp=datetime.now(),
         )
 
@@ -2889,11 +3272,16 @@ class TestSafetyOnlyPath:
     def test_optimizer_none_excess_already_on_appliance_stays_on(self):
         """Currently-ON appliance with no safety rule firing: no OFF from Phase 3."""
         app = _make_appliance(
-            id="dishwasher", priority=500, nominal_power=2000.0,
-            max_daily_runtime=None, on_only=False,
+            id="dishwasher",
+            priority=500,
+            nominal_power=2000.0,
+            max_daily_runtime=None,
+            on_only=False,
         )
         state = _make_state(
-            id="dishwasher", is_on=True, current_power=2000.0,
+            id="dishwasher",
+            is_on=True,
+            current_power=2000.0,
             runtime_today=timedelta(minutes=30),
         )
 
@@ -2915,6 +3303,7 @@ class TestSafetyOnlyPath:
 # TestHelperOnlyMode
 # ---------------------------------------------------------------------------
 
+
 class TestHelperOnlyMode:
     """Test helper-only appliance mode (Phase 2 short-circuit + sort order)."""
 
@@ -2928,8 +3317,12 @@ class TestHelperOnlyMode:
         # Helper has HIGHER priority (lower number) than its dependent.
         # Without the helper_only sort key it would sort first; with it,
         # it must sort last.
-        helper = _make_appliance(id="helper", priority=100, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=500, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=100, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=500, requires_appliance="helper", nominal_power=1500.0
+        )
         # An unrelated non-helper that should sort by priority normally.
         other = _make_appliance(id="other", priority=300, nominal_power=800.0)
 
@@ -2963,8 +3356,12 @@ class TestHelperOnlyMode:
         helper_state = _make_state(id="helper")
         power = _make_power(excess=1000.0)
         optimizer.optimize(
-            power_state=power, appliances=[helper], appliance_states=[helper_state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            power_state=power,
+            appliances=[helper],
+            appliance_states=[helper_state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
 
         # Now query the helper method directly with empty inputs.
@@ -2981,15 +3378,21 @@ class TestHelperOnlyMode:
 
         # Run optimize once so reverse_deps map is populated.
         optimizer.optimize(
-            power_state=power, appliances=[helper, dependent],
+            power_state=power,
+            appliances=[helper, dependent],
             appliance_states=[helper_state, dep_state],
-            plan=_empty_plan(), power_history=[power], tariff=_make_tariff(),
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.ON, target_current=None,
-                reason="test", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.ON,
+                target_current=None,
+                reason="test",
+                overrides_plan=False,
             ),
         ]
         assert optimizer._has_running_dependent("helper", decisions, {}) is True
@@ -3003,14 +3406,18 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.SET_CURRENT, target_current=10.0,
-                reason="test", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.SET_CURRENT,
+                target_current=10.0,
+                reason="test",
+                overrides_plan=False,
             ),
         ]
         assert optimizer._has_running_dependent("helper", decisions, {}) is True
@@ -3024,14 +3431,18 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.OFF, target_current=None,
-                reason="test", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.OFF,
+                target_current=None,
+                reason="test",
+                overrides_plan=False,
             ),
         ]
         assert optimizer._has_running_dependent("helper", decisions, {}) is False
@@ -3046,7 +3457,8 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
@@ -3069,7 +3481,8 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
@@ -3082,8 +3495,12 @@ class TestHelperOnlyMode:
     def test_helper_idle_when_no_dependent_running(self):
         """Helper currently OFF, no dependent running -> IDLE."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         # Dependent has no excess to start (excess = 0)
         power = _make_power(excess=0.0)
         result = optimizer.optimize(
@@ -3097,13 +3514,20 @@ class TestHelperOnlyMode:
 
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         assert helper_dec.action == Action.IDLE
-        assert "no dependent" in helper_dec.reason.lower() or "helper-only" in helper_dec.reason.lower()
+        assert (
+            "no dependent" in helper_dec.reason.lower()
+            or "helper-only" in helper_dec.reason.lower()
+        )
 
     def test_helper_off_when_currently_on_and_no_dependent(self):
         """Helper currently ON, no dependent running -> OFF (mirror semantics)."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         # Helper is on, dependent is not
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=False)
@@ -3119,13 +3543,20 @@ class TestHelperOnlyMode:
 
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         assert helper_dec.action == Action.OFF
-        assert "no dependent" in helper_dec.reason.lower() or "helper-only" in helper_dec.reason.lower()
+        assert (
+            "no dependent" in helper_dec.reason.lower()
+            or "helper-only" in helper_dec.reason.lower()
+        )
 
     def test_helper_on_when_dependent_starts(self):
         """Helper OFF, dependent transitions OFF->ON in same cycle -> helper ON."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         # Excess = 2000W, enough for dep (1500) + helper (200) + buffer
         power = _make_power(excess=2000.0)
         result = optimizer.optimize(
@@ -3139,15 +3570,23 @@ class TestHelperOnlyMode:
 
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         dep_dec = next(d for d in result.decisions if d.appliance_id == "dep")
-        assert dep_dec.action == Action.ON, f"dep should be ON, got {dep_dec.action} ({dep_dec.reason})"
-        assert helper_dec.action == Action.ON, f"helper should be ON, got {helper_dec.action} ({helper_dec.reason})"
+        assert dep_dec.action == Action.ON, (
+            f"dep should be ON, got {dep_dec.action} ({dep_dec.reason})"
+        )
+        assert helper_dec.action == Action.ON, (
+            f"helper should be ON, got {helper_dec.action} ({helper_dec.reason})"
+        )
         assert "helper-only" in helper_dec.reason.lower()
 
     def test_helper_stays_on_when_dependent_already_running(self):
         """Helper ON, dependent ON and staying ON -> helper stays ON."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
         # Excess after subtracting these: assume 500W spare
@@ -3170,15 +3609,22 @@ class TestHelperOnlyMode:
     def test_helper_off_when_dependent_stops(self):
         """Helper ON, dependent transitions ON->OFF (max_daily_runtime hit) -> both OFF."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
         # Dependent has hit its max_daily_runtime
         dependent = _make_appliance(
-            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0,
+            id="dep",
+            priority=400,
+            requires_appliance="helper",
+            nominal_power=1500.0,
             max_daily_runtime=timedelta(minutes=60),
         )
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(
-            id="dep", is_on=True, current_power=1500.0,
+            id="dep",
+            is_on=True,
+            current_power=1500.0,
             runtime_today=timedelta(minutes=120),  # Already over the limit
         )
         power = _make_power(excess=2000.0)
@@ -3193,15 +3639,25 @@ class TestHelperOnlyMode:
 
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         dep_dec = next(d for d in result.decisions if d.appliance_id == "dep")
-        assert dep_dec.action == Action.OFF, f"dep should be OFF (max_daily_runtime), got {dep_dec.reason}"
-        assert helper_dec.action == Action.OFF, f"helper should mirror dep OFF, got {helper_dec.reason}"
+        assert dep_dec.action == Action.OFF, (
+            f"dep should be OFF (max_daily_runtime), got {dep_dec.reason}"
+        )
+        assert helper_dec.action == Action.OFF, (
+            f"helper should mirror dep OFF, got {helper_dec.reason}"
+        )
 
     def test_helper_with_multiple_dependents_one_running(self):
         """Helper has 2 dependents, one ON one OFF -> helper stays ON."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dep1 = _make_appliance(id="dep1", priority=400, requires_appliance="helper", nominal_power=1500.0)
-        dep2 = _make_appliance(id="dep2", priority=410, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dep1 = _make_appliance(
+            id="dep1", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
+        dep2 = _make_appliance(
+            id="dep2", priority=410, requires_appliance="helper", nominal_power=1500.0
+        )
 
         # dep1 is ON, dep2 is OFF
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
@@ -3227,9 +3683,15 @@ class TestHelperOnlyMode:
     def test_helper_with_multiple_dependents_all_off(self):
         """Helper has 2 dependents, both OFF -> helper OFF."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dep1 = _make_appliance(id="dep1", priority=400, requires_appliance="helper", nominal_power=1500.0)
-        dep2 = _make_appliance(id="dep2", priority=410, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dep1 = _make_appliance(
+            id="dep1", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
+        dep2 = _make_appliance(
+            id="dep2", priority=410, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep1_state = _make_state(id="dep1", is_on=False)
@@ -3252,10 +3714,15 @@ class TestHelperOnlyMode:
         """Helper with override_active=True runs regardless of dependent state."""
         optimizer = _optimizer_for_tests()
         helper = _make_appliance(
-            id="helper", priority=500, helper_only=True,
-            nominal_power=200.0, override_active=True,
+            id="helper",
+            priority=500,
+            helper_only=True,
+            nominal_power=200.0,
+            override_active=True,
         )
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=False)
         dep_state = _make_state(id="dep", is_on=False)
@@ -3280,8 +3747,12 @@ class TestHelperOnlyMode:
         """Helper currently ON (physical button) with no override and no
         dependent -> integration emits OFF (A-strict semantics)."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         # Helper physically ON (e.g., user hit the button), dependent OFF
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
@@ -3298,21 +3769,31 @@ class TestHelperOnlyMode:
 
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         assert helper_dec.action == Action.OFF
-        assert "no dependent" in helper_dec.reason.lower() or "helper-only" in helper_dec.reason.lower()
+        assert (
+            "no dependent" in helper_dec.reason.lower()
+            or "helper-only" in helper_dec.reason.lower()
+        )
 
     def test_helper_max_daily_runtime_overrides_helper_only(self):
         """Helper with max_daily_runtime exceeded is OFF even when dependent
         wants to start. max_daily_runtime sits earlier in the safety chain."""
         optimizer = _optimizer_for_tests()
         helper = _make_appliance(
-            id="helper", priority=500, helper_only=True, nominal_power=200.0,
+            id="helper",
+            priority=500,
+            helper_only=True,
+            nominal_power=200.0,
             max_daily_runtime=timedelta(minutes=60),
         )
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         # Helper has hit its max runtime
         helper_state = _make_state(
-            id="helper", is_on=True, current_power=200.0,
+            id="helper",
+            is_on=True,
+            current_power=200.0,
             runtime_today=timedelta(minutes=120),
         )
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3329,7 +3810,10 @@ class TestHelperOnlyMode:
         helper_dec = next(d for d in result.decisions if d.appliance_id == "helper")
         assert helper_dec.action == Action.OFF
         # Reason should mention max_daily_runtime, not helper-only
-        assert "max_daily_runtime" in helper_dec.reason.lower() or "max daily runtime" in helper_dec.reason.lower()
+        assert (
+            "max_daily_runtime" in helper_dec.reason.lower()
+            or "max daily runtime" in helper_dec.reason.lower()
+        )
 
     def test_helper_ignores_time_window(self):
         """Helper has start_after=22:00 / end_before=23:00, current time
@@ -3342,15 +3826,21 @@ class TestHelperOnlyMode:
         """
         from datetime import time as dtime
         from dataclasses import replace
+
         optimizer = _optimizer_for_tests()
         helper = _make_appliance(
-            id="helper", priority=500, helper_only=True, nominal_power=200.0,
+            id="helper",
+            priority=500,
+            helper_only=True,
+            nominal_power=200.0,
         )
         # Override start_after / end_before via direct construction since the
         # _make_appliance factory doesn't expose them. Use dataclasses.replace.
         helper = replace(helper, start_after=dtime(22, 0), end_before=dtime(23, 0))
 
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=False)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3375,10 +3865,15 @@ class TestHelperOnlyMode:
         (helper-only short-circuit sits before on_only check)."""
         optimizer = _optimizer_for_tests()
         helper = _make_appliance(
-            id="helper", priority=500, helper_only=True, on_only=True,
+            id="helper",
+            priority=500,
+            helper_only=True,
+            on_only=True,
             nominal_power=200.0,
         )
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=False)
@@ -3396,15 +3891,22 @@ class TestHelperOnlyMode:
         # No dependent running — helper-only short-circuit fires before on_only,
         # so helper goes OFF (mirror semantics) instead of staying ON.
         assert helper_dec.action == Action.OFF
-        assert "helper-only" in helper_dec.reason.lower() or "no dependent" in helper_dec.reason.lower()
+        assert (
+            "helper-only" in helper_dec.reason.lower()
+            or "no dependent" in helper_dec.reason.lower()
+        )
 
     def test_helper_safety_only_path_steady_state(self):
         """Safety-only path: helper currently ON, dependent currently ON,
         no safety rule fires for dependent -> helper stays ON via state fallback."""
         # Use min_good_samples=3 to force safety-only path with only 1 sample
         optimizer = _optimizer_for_tests(min_good_samples=3)
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3423,21 +3925,35 @@ class TestHelperOnlyMode:
         # In safety-only path, dependents with no firing safety rule are
         # OMITTED from decisions. The helper-only short-circuit should fall
         # back to checking dep_state.is_on -> True -> helper ON.
-        helper_dec = next((d for d in result.decisions if d.appliance_id == "helper"), None)
-        assert helper_dec is not None, "helper should have a decision in safety-only path"
+        helper_dec = next(
+            (d for d in result.decisions if d.appliance_id == "helper"), None
+        )
+        assert helper_dec is not None, (
+            "helper should have a decision in safety-only path"
+        )
         assert helper_dec.action == Action.ON
-        assert "helper-only" in helper_dec.reason.lower() or "dependent is running" in helper_dec.reason.lower()
+        assert (
+            "helper-only" in helper_dec.reason.lower()
+            or "dependent is running" in helper_dec.reason.lower()
+        )
 
     def test_helper_safety_only_path_dependent_safety_off(self):
         """Safety-only path: helper currently ON, dependent has time window
         forcing OFF -> helper sees dependent OFF in decisions -> helper OFF."""
         from datetime import time as dtime
         from dataclasses import replace
+
         optimizer = _optimizer_for_tests(min_good_samples=3)
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         # Restrict dependent to a time window that excludes the test fixture time (12:00 UTC)
-        dependent = replace(dependent, start_after=dtime(22, 0), end_before=dtime(23, 0))
+        dependent = replace(
+            dependent, start_after=dtime(22, 0), end_before=dtime(23, 0)
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3454,22 +3970,31 @@ class TestHelperOnlyMode:
 
         # Dependent should have an OFF decision in the list (time window
         # safety rule fired). Helper should see that and emit OFF.
-        helper_dec = next((d for d in result.decisions if d.appliance_id == "helper"), None)
+        helper_dec = next(
+            (d for d in result.decisions if d.appliance_id == "helper"), None
+        )
         dep_dec = next((d for d in result.decisions if d.appliance_id == "dep"), None)
         assert dep_dec is not None and dep_dec.action == Action.OFF, (
             f"dep should be OFF (time window), got {dep_dec}"
         )
         assert helper_dec is not None
         assert helper_dec.action == Action.OFF
-        assert "helper-only" in helper_dec.reason.lower() or "no dependent" in helper_dec.reason.lower()
+        assert (
+            "helper-only" in helper_dec.reason.lower()
+            or "no dependent" in helper_dec.reason.lower()
+        )
 
     def test_helper_phase3_shed_protection(self):
         """Phase 3 SHED never sheds a dependency while its dependent is running.
         With helper_only set, that protection still applies — the helper is in
         _reverse_deps and Phase 3 honors the existing protection."""
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3513,12 +4038,18 @@ class TestHelperOnlyMode:
         """
         optimizer = _optimizer_for_tests()
         helper = _make_appliance(
-            id="helper", priority=500, helper_only=True,
-            nominal_power=200.0, on_threshold=0,
+            id="helper",
+            priority=500,
+            helper_only=True,
+            nominal_power=200.0,
+            on_threshold=0,
         )
         dependent = _make_appliance(
-            id="dep", priority=400, requires_appliance="helper",
-            nominal_power=1500.0, on_threshold=0,
+            id="dep",
+            priority=400,
+            requires_appliance="helper",
+            nominal_power=1500.0,
+            on_threshold=0,
         )
 
         # Excess = exactly 1700W (dep + helper) — just enough.
@@ -3554,18 +4085,24 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.IDLE, target_current=None,
-                reason="Insufficient excess (transient)", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.IDLE,
+                target_current=None,
+                reason="Insufficient excess (transient)",
+                overrides_plan=False,
             ),
         ]
         state_by_id = {"dep": _make_state(id="dep", is_on=True)}
-        assert optimizer._has_running_dependent("helper", decisions, state_by_id) is True
+        assert (
+            optimizer._has_running_dependent("helper", decisions, state_by_id) is True
+        )
 
     def test_has_running_dependent_idle_decision_state_off_returns_false(self):
         """IDLE decision with state.is_on=False → dep NOT running."""
@@ -3576,18 +4113,24 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.IDLE, target_current=None,
-                reason="Max daily activations reached", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.IDLE,
+                target_current=None,
+                reason="Max daily activations reached",
+                overrides_plan=False,
             ),
         ]
         state_by_id = {"dep": _make_state(id="dep", is_on=False)}
-        assert optimizer._has_running_dependent("helper", decisions, state_by_id) is False
+        assert (
+            optimizer._has_running_dependent("helper", decisions, state_by_id) is False
+        )
 
     def test_has_running_dependent_off_decision_is_authoritative(self):
         """OFF decision is authoritative even if state.is_on=True (HA lag)."""
@@ -3598,29 +4141,42 @@ class TestHelperOnlyMode:
             power_state=_make_power(excess=2500.0),
             appliances=[helper, dependent],
             appliance_states=[_make_state(id="helper"), _make_state(id="dep")],
-            plan=_empty_plan(), power_history=[_make_power(excess=2500.0)],
+            plan=_empty_plan(),
+            power_history=[_make_power(excess=2500.0)],
             tariff=_make_tariff(),
         )
 
         decisions = [
             ControlDecision(
-                appliance_id="dep", action=Action.OFF, target_current=None,
-                reason="Max daily runtime reached", overrides_plan=False,
+                appliance_id="dep",
+                action=Action.OFF,
+                target_current=None,
+                reason="Max daily runtime reached",
+                overrides_plan=False,
                 bypasses_cooldown=True,
             ),
         ]
         state_by_id = {"dep": _make_state(id="dep", is_on=True)}
-        assert optimizer._has_running_dependent("helper", decisions, state_by_id) is False
+        assert (
+            optimizer._has_running_dependent("helper", decisions, state_by_id) is False
+        )
 
     def test_helper_off_when_dependent_forced_off_by_safety_rule(self):
         """Dep safety rule forces OFF → helper mirrors OFF (OFF is authoritative)."""
         from datetime import time as dtime
         from dataclasses import replace
+
         optimizer = _optimizer_for_tests()
-        helper = _make_appliance(id="helper", priority=500, helper_only=True, nominal_power=200.0)
-        dependent = _make_appliance(id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0)
+        helper = _make_appliance(
+            id="helper", priority=500, helper_only=True, nominal_power=200.0
+        )
+        dependent = _make_appliance(
+            id="dep", priority=400, requires_appliance="helper", nominal_power=1500.0
+        )
         # Restrict dependent to a time window that excludes the test fixture time (12:00 UTC)
-        dependent = replace(dependent, start_after=dtime(22, 0), end_before=dtime(23, 0))
+        dependent = replace(
+            dependent, start_after=dtime(22, 0), end_before=dtime(23, 0)
+        )
 
         helper_state = _make_state(id="helper", is_on=True, current_power=200.0)
         dep_state = _make_state(id="dep", is_on=True, current_power=1500.0)
@@ -3680,9 +4236,14 @@ class TestDualBudgetInvariant:
         power = _make_power(excess=-300.0, pv=2700.0)
         history = [
             PowerState(
-                pv_production=4700.0, grid_export=2000.0, grid_import=0.0,
-                load_power=2700.0, excess_power=2000.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=4700.0,
+                grid_export=2000.0,
+                grid_import=0.0,
+                load_power=2700.0,
+                excess_power=2000.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * i),
             )
             for i in range(30)
@@ -3726,9 +4287,14 @@ class TestDualBudgetInvariant:
         power = _make_power(excess=1500.0, pv=5640.0)
         history = [
             PowerState(
-                pv_production=3640.0, grid_export=0.0, grid_import=500.0,
-                load_power=4140.0, excess_power=-500.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=3640.0,
+                grid_export=0.0,
+                grid_import=500.0,
+                load_power=4140.0,
+                excess_power=-500.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * i),
             )
             for i in range(30)
@@ -3784,9 +4350,14 @@ class TestDualBudgetInvariant:
         power = _make_power(excess=-300.0, pv=6600.0)
         history = [
             PowerState(
-                pv_production=8900.0, grid_export=2000.0, grid_import=0.0,
-                load_power=6900.0, excess_power=2000.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=8900.0,
+                grid_export=2000.0,
+                grid_import=0.0,
+                load_power=6900.0,
+                excess_power=2000.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * i),
             )
             for i in range(30)
@@ -3873,9 +4444,14 @@ class TestDualBudgetInvariant:
         power = _make_power(excess=1500.0, pv=9780.0)
         history = [
             PowerState(
-                pv_production=9080.0, grid_export=800.0, grid_import=0.0,
-                load_power=8280.0, excess_power=800.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=9080.0,
+                grid_export=800.0,
+                grid_import=0.0,
+                load_power=8280.0,
+                excess_power=800.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * i),
             )
             for i in range(30)
@@ -3943,6 +4519,7 @@ class TestDualBudgetInvariant:
         # _make_appliance doesn't expose averaging_window, so we use
         # dataclasses.replace to set it post-hoc.
         import dataclasses
+
         kona = dataclasses.replace(kona, averaging_window=900.0)
 
         state = _make_state(id="kona", is_on=True, current_power=4140.0)  # 6 A
@@ -3955,18 +4532,28 @@ class TestDualBudgetInvariant:
         # so Kona should see ~800 W as its avg_budget.
         recent_15 = [
             PowerState(
-                pv_production=4940.0, grid_export=800.0, grid_import=0.0,
-                load_power=4140.0, excess_power=800.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=4940.0,
+                grid_export=800.0,
+                grid_import=0.0,
+                load_power=4140.0,
+                excess_power=800.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * i),
             )
             for i in range(30)
         ]
         older_15 = [
             PowerState(
-                pv_production=4340.0, grid_export=200.0, grid_import=0.0,
-                load_power=4140.0, excess_power=200.0,
-                battery_soc=None, battery_power=None, ev_soc=None,
+                pv_production=4340.0,
+                grid_export=200.0,
+                grid_import=0.0,
+                load_power=4140.0,
+                excess_power=200.0,
+                battery_soc=None,
+                battery_power=None,
+                ev_soc=None,
                 timestamp=_utcnow() - timedelta(seconds=30 * (30 + i)),
             )
             for i in range(30)
@@ -3975,8 +4562,9 @@ class TestDualBudgetInvariant:
         # the coordinator appends to the history list.
         history = list(reversed(older_15)) + list(reversed(recent_15))
 
-        opt = _optimizer_for_tests(grid_voltage=230, off_threshold=-100,
-                                   min_good_samples=3)
+        opt = _optimizer_for_tests(
+            grid_voltage=230, off_threshold=-100, min_good_samples=3
+        )
         result = opt.optimize(
             power_state=power,
             appliances=[kona],
@@ -4163,21 +4751,28 @@ class TestKonaProdRegression2026_04_08:
 
     # (event_name, pv, load, current_excess, avg_excess, kona_drawn_power)
     _KONA_CASES = [
-        ("1116", 6019.0, 4537.0, 1482.0, 1325.0, 3430.0),   # 11:16:31
-        ("1159", 6585.0, 4759.0, 1826.0, 1364.0, 3654.0),   # 11:59:01
-        ("1257", 7019.0, 4051.0, 2968.0,  -29.0, 3565.0),   # 12:57:01 (worst case)
-        ("1320", 6911.0, 4024.0, 2887.0, 2094.0, 3524.0),   # 13:20:31
-        ("1342", 6861.0, 4293.0, 2568.0, 1856.0, 3141.0),   # 13:42:01
-        ("1422", 6529.0, 4258.0, 2271.0, 1694.0, 3089.0),   # 14:22:31
-        ("1439", 6436.0, 4398.0, 2038.0, 1738.0, 3471.0),   # 14:39:01
-        ("1516", 5827.0, 4484.0, 1343.0,  974.0, 3836.0),   # 15:16:31
-        ("1603", 5180.0, 3666.0, 1514.0, 1251.0, 3418.0),   # 16:03:01
+        ("1116", 6019.0, 4537.0, 1482.0, 1325.0, 3430.0),  # 11:16:31
+        ("1159", 6585.0, 4759.0, 1826.0, 1364.0, 3654.0),  # 11:59:01
+        ("1257", 7019.0, 4051.0, 2968.0, -29.0, 3565.0),  # 12:57:01 (worst case)
+        ("1320", 6911.0, 4024.0, 2887.0, 2094.0, 3524.0),  # 13:20:31
+        ("1342", 6861.0, 4293.0, 2568.0, 1856.0, 3141.0),  # 13:42:01
+        ("1422", 6529.0, 4258.0, 2271.0, 1694.0, 3089.0),  # 14:22:31
+        ("1439", 6436.0, 4398.0, 2038.0, 1738.0, 3471.0),  # 14:39:01
+        ("1516", 5827.0, 4484.0, 1343.0, 974.0, 3836.0),  # 15:16:31
+        ("1603", 5180.0, 3666.0, 1514.0, 1251.0, 3418.0),  # 16:03:01
     ]
 
-    @pytest.mark.parametrize("label,pv,load,cur,avg,drawn", _KONA_CASES,
-                             ids=[c[0] for c in _KONA_CASES])
+    @pytest.mark.parametrize(
+        "label,pv,load,cur,avg,drawn", _KONA_CASES, ids=[c[0] for c in _KONA_CASES]
+    )
     def test_no_shed_when_physical_excess_positive(
-        self, label, pv, load, cur, avg, drawn,
+        self,
+        label,
+        pv,
+        load,
+        cur,
+        avg,
+        drawn,
     ):
         """Kona stays ON (or SET_CURRENT) despite the mixed-unit bookkeeping
         artefacts that caused full-OFF on prod."""
@@ -4244,18 +4839,23 @@ class TestKonaProdRegression2026_04_08:
 # TestCheapWindowTargetAmps
 # ---------------------------------------------------------------------------
 
+
 class TestCheapWindowTargetAmps:
     """Unit tests for Optimizer._cheap_window_target_amps."""
 
     def test_returns_none_when_override_unset(self):
         optimizer = _optimizer_for_tests()
-        appliance = _make_appliance(cheap_grid_target_current=None, allow_grid_supplement=True)
+        appliance = _make_appliance(
+            cheap_grid_target_current=None, allow_grid_supplement=True
+        )
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
         assert optimizer._cheap_window_target_amps(appliance, tariff, phases=3) is None
 
     def test_returns_none_when_grid_supplement_disabled(self):
         optimizer = _optimizer_for_tests()
-        appliance = _make_appliance(cheap_grid_target_current=16.0, allow_grid_supplement=False)
+        appliance = _make_appliance(
+            cheap_grid_target_current=16.0, allow_grid_supplement=False
+        )
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
         assert optimizer._cheap_window_target_amps(appliance, tariff, phases=3) is None
 
@@ -4319,6 +4919,7 @@ class TestCheapWindowTargetAmps:
 # TestCheapGridTargetSite1
 # ---------------------------------------------------------------------------
 
+
 class TestCheapGridTargetSite1:
     """Tests for the grid-supplement entry point in _allocate_dynamic_current (Site 1).
 
@@ -4331,16 +4932,25 @@ class TestCheapGridTargetSite1:
         """OFF appliance, cheap, low excess, override=max_current → SET_CURRENT max_current."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         decision, power_consumed = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=0.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=0.0,
+            tariff=tariff,
+            plan=None,
         )
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 16.0
@@ -4350,34 +4960,55 @@ class TestCheapGridTargetSite1:
     def test_dynamic_current_cheap_grid_target_capped_by_max_grid_power(self):
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
-            max_grid_power=4000.0, cheap_grid_target_current=16.0,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
+            max_grid_power=4000.0,
+            cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=0.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=0.0,
+            tariff=tariff,
+            plan=None,
         )
         # 4000W / (230*3) = 5.797A → floored 5.7
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 5.7
 
-    def test_dynamic_current_cheap_grid_target_none_preserves_min_current_behavior(self):
+    def test_dynamic_current_cheap_grid_target_none_preserves_min_current_behavior(
+        self,
+    ):
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=None,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=0.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=0.0,
+            tariff=tariff,
+            plan=None,
         )
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 6.0  # min_current, the existing behaviour
@@ -4385,16 +5016,25 @@ class TestCheapGridTargetSite1:
     def test_dynamic_current_override_requires_grid_supplement(self):
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
             allow_grid_supplement=False,  # disabled
-            cheap_price_threshold=0.05, cheap_grid_target_current=16.0,
+            cheap_price_threshold=0.05,
+            cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=0.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=0.0,
+            tariff=tariff,
+            plan=None,
         )
         # Override is gated by allow_grid_supplement → existing IDLE branch fires
         assert decision.action == Action.IDLE
@@ -4403,6 +5043,7 @@ class TestCheapGridTargetSite1:
 # ---------------------------------------------------------------------------
 # TestCheapGridTargetSite2
 # ---------------------------------------------------------------------------
+
 
 class TestCheapGridTargetSite2:
     """Tests for the natural-scaling path in _allocate_dynamic_current (Site 2).
@@ -4416,9 +5057,14 @@ class TestCheapGridTargetSite2:
         """OFF appliance starting on partial solar + cheap tariff → uses override even though excess alone supports a lower current."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
@@ -4427,7 +5073,11 @@ class TestCheapGridTargetSite2:
         # Excess supports natural amps of 5520/(230*3) = 8A — without override, decision would be 8A.
         # Need avg_budget >= min_watts_needed (6 * 230 * 3 = 4140 + on_threshold) to enter natural-scaling path.
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=5520.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=5520.0,
+            tariff=tariff,
+            plan=None,
         )
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 16.0  # override clamped up
@@ -4436,16 +5086,25 @@ class TestCheapGridTargetSite2:
         """OFF appliance, NOT cheap, override set → existing solar-driven behaviour."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.10, cheap_threshold=0.05)  # not cheap
 
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=5520.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=5520.0,
+            tariff=tariff,
+            plan=None,
         )
         # 5520/(230*3) = 8.0A naturally
         assert decision.action == Action.SET_CURRENT
@@ -4462,17 +5121,27 @@ class TestCheapGridTargetSite2:
         override — the override only ever clamps UP."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
-            max_grid_power=4000.0, cheap_grid_target_current=16.0,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
+            max_grid_power=4000.0,
+            cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=False)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         # avg_budget large enough to naturally support max_current
         decision, _ = optimizer._allocate_dynamic_current(
-            appliance, state, avg_budget=15_000.0, tariff=tariff, plan=None,
+            appliance,
+            state,
+            avg_budget=15_000.0,
+            tariff=tariff,
+            plan=None,
         )
         # Natural is 16A (clamped to max_current). Override capped to 5.7 by
         # max_grid_power. Site 2 only clamps UP (strict greater), so 16 stays.
@@ -4483,6 +5152,7 @@ class TestCheapGridTargetSite2:
 # ---------------------------------------------------------------------------
 # TestCheapGridTargetSite3
 # ---------------------------------------------------------------------------
+
 
 class TestCheapGridTargetSite3:
     """Tests for the already-ON dynamic-current branch in _allocate_appliance (Site 3).
@@ -4495,9 +5165,14 @@ class TestCheapGridTargetSite3:
         """ON appliance, cheap, low solar → stays at override target (grid supplements)."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         # Currently drawing min_current (4140W = 6A * 230V * 3 phases)
@@ -4508,8 +5183,12 @@ class TestCheapGridTargetSite3:
         # (current_power=4140W + budget 0 = 4140W → 4140/(230*3)=6.0A clamped to min_current).
         # With override=16A, Site 3 should clamp UP to 16A.
         decision, _ = optimizer._allocate_appliance(
-            appliance, state, avg_budget=0.0, instant_budget=0.0,
-            plan=None, tariff=tariff,
+            appliance,
+            state,
+            avg_budget=0.0,
+            instant_budget=0.0,
+            plan=None,
+            tariff=tariff,
         )
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 16.0
@@ -4518,17 +5197,26 @@ class TestCheapGridTargetSite3:
         """ON appliance, NOT cheap → existing solar-driven scaling preserved."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=True, current_power=4140.0)
         tariff = _make_tariff(current_price=0.10, cheap_threshold=0.05)  # NOT cheap
 
         decision, _ = optimizer._allocate_appliance(
-            appliance, state, avg_budget=0.0, instant_budget=0.0,
-            plan=None, tariff=tariff,
+            appliance,
+            state,
+            avg_budget=0.0,
+            instant_budget=0.0,
+            plan=None,
+            tariff=tariff,
         )
         # Without override, current_power 4140 + 0 budget → 4140/(230*3)=6.0A, clamped to min_current
         assert decision.action == Action.SET_CURRENT
@@ -4541,17 +5229,27 @@ class TestCheapGridTargetSite3:
         Strict-greater clamp does NOT modify, so target stays at 6A."""
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
-            max_grid_power=4000.0, cheap_grid_target_current=16.0,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
+            max_grid_power=4000.0,
+            cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=True, current_power=4140.0)
         tariff = _make_tariff(current_price=0.01, cheap_threshold=0.05)
 
         decision, _ = optimizer._allocate_appliance(
-            appliance, state, avg_budget=0.0, instant_budget=0.0,
-            plan=None, tariff=tariff,
+            appliance,
+            state,
+            avg_budget=0.0,
+            instant_budget=0.0,
+            plan=None,
+            tariff=tariff,
         )
         # 4000/(230*3) = 5.797 → floored 5.7A. min_current=6.0 clamps natural up → 6.0
         # Override 5.7 < natural 6.0, strict-greater fails, target stays at 6.0
@@ -4570,17 +5268,26 @@ class TestCheapGridTargetSite3:
         """
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         state = _make_state(appliance.id, is_on=True, current_power=2978.0)
         tariff = _make_tariff(current_price=-0.086, cheap_threshold=0.05)
 
         decision, power_delta = optimizer._allocate_appliance(
-            appliance, state, avg_budget=4410.0, instant_budget=4410.0,
-            plan=None, tariff=tariff,
+            appliance,
+            state,
+            avg_budget=4410.0,
+            instant_budget=4410.0,
+            plan=None,
+            tariff=tariff,
         )
         assert decision.action == Action.SET_CURRENT
         assert decision.target_current == 16.0
@@ -4618,9 +5325,14 @@ class TestCheapGridTargetSite3:
         """
         optimizer = _optimizer_for_tests(grid_voltage=230)
         appliance = _make_appliance(
-            dynamic_current=True, current_entity="number.kona_curr",
-            min_current=6.0, max_current=16.0, phases=3, current_step=0.1,
-            allow_grid_supplement=True, cheap_price_threshold=0.05,
+            dynamic_current=True,
+            current_entity="number.kona_curr",
+            min_current=6.0,
+            max_current=16.0,
+            phases=3,
+            current_step=0.1,
+            allow_grid_supplement=True,
+            cheap_price_threshold=0.05,
             cheap_grid_target_current=16.0,
         )
         # Kona running at full power; excess_for_adjustment dropped below
@@ -4630,8 +5342,12 @@ class TestCheapGridTargetSite3:
         tariff = _make_tariff(current_price=-0.137, cheap_threshold=0.05)
 
         decision, _ = optimizer._allocate_appliance(
-            appliance, state, avg_budget=-7500.0, instant_budget=-7500.0,
-            plan=None, tariff=tariff,
+            appliance,
+            state,
+            avg_budget=-7500.0,
+            instant_budget=-7500.0,
+            plan=None,
+            tariff=tariff,
         )
         assert decision.action == Action.SET_CURRENT, (
             f"override must skip the early return; got action={decision.action} "
@@ -4658,8 +5374,11 @@ class TestPhase4CheapTariffDischargeBlock:
     @staticmethod
     def _decision(appliance_id: str, action: Action, reason: str):
         return ControlDecision(
-            appliance_id=appliance_id, action=action,
-            target_current=None, reason=reason, overrides_plan=False,
+            appliance_id=appliance_id,
+            action=action,
+            target_current=None,
+            reason=reason,
+            overrides_plan=False,
         )
 
     def test_cheap_window_override_decision_blocks_discharge(self):
@@ -4667,13 +5386,17 @@ class TestPhase4CheapTariffDischargeBlock:
         triggers the discharge block."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(id="kona")
-        decisions = [self._decision(
-            "kona", Action.SET_CURRENT,
-            "Grid supplement (cheap-window target): 16.0A (11040W, 4909W solar-supportable)",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.SET_CURRENT,
+                "Grid supplement (cheap-window target): 16.0A (11040W, 4909W solar-supportable)",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
         )
 
         assert action.should_limit is True
@@ -4684,13 +5407,17 @@ class TestPhase4CheapTariffDischargeBlock:
         also triggers the block (same substring, different code path)."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(id="kona")
-        decisions = [self._decision(
-            "kona", Action.SET_CURRENT,
-            "Grid supplement (export solar at 0.080, buy grid at -0.137): 16.0A",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.SET_CURRENT,
+                "Grid supplement (export solar at 0.080, buy grid at -0.137): 16.0A",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
         )
 
         assert action.should_limit is True
@@ -4707,13 +5434,17 @@ class TestPhase4CheapTariffDischargeBlock:
             is_big_consumer=True,
             battery_max_discharge_override=2000.0,
         )
-        decisions = [self._decision(
-            "kona", Action.SET_CURRENT,
-            "Grid supplement (cheap-window target): 16.0A (...)",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.SET_CURRENT,
+                "Grid supplement (cheap-window target): 16.0A (...)",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
         )
 
         assert action.max_discharge_watts == 0, (
@@ -4726,12 +5457,18 @@ class TestPhase4CheapTariffDischargeBlock:
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(id="kona")
         # SHED would have shed Kona under force_charge; simulate by using OFF.
-        decisions = [self._decision(
-            "kona", Action.OFF, "Shed: insufficient excess (priority 1)",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.OFF,
+                "Shed: insufficient excess (priority 1)",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance], force_charge=True,
+            decisions,
+            [appliance],
+            force_charge=True,
         )
 
         assert action.should_limit is True
@@ -4743,7 +5480,9 @@ class TestPhase4CheapTariffDischargeBlock:
         decisions = []  # no appliances at all
 
         action = optimizer._battery_discharge_protection(
-            decisions, [], auto_grid_charge_engaged=True,
+            decisions,
+            [],
+            auto_grid_charge_engaged=True,
         )
 
         assert action.should_limit is True
@@ -4754,12 +5493,17 @@ class TestPhase4CheapTariffDischargeBlock:
         no cheap-tariff block; existing big-consumer / no-limit paths apply."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(id="washer", is_big_consumer=False)
-        decisions = [self._decision(
-            "washer", Action.ON, "Excess available (1000W >= 500W needed)",
-        )]
+        decisions = [
+            self._decision(
+                "washer",
+                Action.ON,
+                "Excess available (1000W >= 500W needed)",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
         )
 
         # No big consumer, no triggers → no limit
@@ -4770,14 +5514,18 @@ class TestPhase4CheapTariffDischargeBlock:
         unlike SoC-protection, no Action.OFF is inserted."""
         optimizer = _optimizer_for_tests()
         appliance = _make_appliance(id="kona")
-        decisions = [self._decision(
-            "kona", Action.SET_CURRENT,
-            "Grid supplement (cheap-window target): 16.0A (...)",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.SET_CURRENT,
+                "Grid supplement (cheap-window target): 16.0A (...)",
+            )
+        ]
         decisions_before = list(decisions)  # snapshot
 
         optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
         )
 
         # Phase 4 should NOT have replaced any decision with Action.OFF.
@@ -4794,13 +5542,17 @@ class TestPhase4CheapTariffDischargeBlock:
             is_big_consumer=False,  # standard appliance, eligible for shed
             on_only=False,
         )
-        decisions = [self._decision(
-            "kona", Action.SET_CURRENT,
-            "Grid supplement (cheap-window target): 16.0A (...)",
-        )]
+        decisions = [
+            self._decision(
+                "kona",
+                Action.SET_CURRENT,
+                "Grid supplement (cheap-window target): 16.0A (...)",
+            )
+        ]
 
         action = optimizer._battery_discharge_protection(
-            decisions, [appliance],
+            decisions,
+            [appliance],
             battery_soc=5.0,
             min_battery_soc=10.0,
             force_charge=True,  # cheap-tariff trigger ALSO active
@@ -4811,4 +5563,3 @@ class TestPhase4CheapTariffDischargeBlock:
         # SoC-protection sheds → decision was replaced with Action.OFF.
         assert decisions[0].action == Action.OFF
         assert "Battery SoC protection" in decisions[0].reason
-

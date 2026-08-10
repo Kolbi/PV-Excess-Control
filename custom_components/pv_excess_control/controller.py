@@ -6,6 +6,7 @@ Bridges Home Assistant state with the optimizer:
 - Applies ControlDecisions by calling HA services
 - Handles safety checks (switch interval, on_only)
 """
+
 from __future__ import annotations
 
 import logging
@@ -58,14 +59,20 @@ class Controller:
     def __init__(self, hass: HomeAssistant, config_data: dict) -> None:
         self.hass = hass
         self.config_data = config_data
-        self._last_state_change: dict[str, datetime] = {}  # appliance_id -> last change time
+        self._last_state_change: dict[
+            str, datetime
+        ] = {}  # appliance_id -> last change time
 
     # ------------------------------------------------------------------
     # Sensor reading helpers
     # ------------------------------------------------------------------
 
     def _read_sensor(
-        self, entity_id: str | None, default: float = 0.0, *, power: bool = False,
+        self,
+        entity_id: str | None,
+        default: float = 0.0,
+        *,
+        power: bool = False,
     ) -> float:
         """Read a numeric sensor value, returning default if unavailable.
 
@@ -86,7 +93,10 @@ class Controller:
         return val
 
     def _read_sensor_optional(
-        self, entity_id: str | None, *, power: bool = False,
+        self,
+        entity_id: str | None,
+        *,
+        power: bool = False,
     ) -> float | None:
         """Read a numeric sensor value, returning None if unavailable.
 
@@ -143,7 +153,8 @@ class Controller:
 
         battery_soc = self._read_sensor_optional(data.get(CONF_BATTERY_SOC))
         battery_power = self._read_sensor_optional(
-            data.get(CONF_BATTERY_POWER), power=True,
+            data.get(CONF_BATTERY_POWER),
+            power=True,
         )
 
         # Calculate excess: PV production minus load; if no load sensor, use grid export
@@ -180,13 +191,17 @@ class Controller:
             entity_state = self.hass.states.get(config.entity_id)
             is_on = False
             if entity_state is not None:
-                is_on = entity_state.state not in _OFF_STATES and entity_state.state not in _UNAVAILABLE_STATES
+                is_on = (
+                    entity_state.state not in _OFF_STATES
+                    and entity_state.state not in _UNAVAILABLE_STATES
+                )
 
             # Read actual power if available
             current_power = 0.0
             if config.actual_power_entity:
                 current_power = self._read_sensor(
-                    config.actual_power_entity, power=True,
+                    config.actual_power_entity,
+                    power=True,
                 )
 
             # Read current amperage if available
@@ -243,18 +258,29 @@ class Controller:
                 remaining = max(config.switch_interval - elapsed, 0)
                 _LOGGER.debug(
                     "Skip %s: switch interval (%ds remaining)",
-                    config.name, int(remaining),
+                    config.name,
+                    int(remaining),
                 )
                 continue
 
             # Check if state actually needs to change
             current_state = self.hass.states.get(config.entity_id)
             if not self._needs_change(decision, current_state, config):
-                entity_state = getattr(current_state, "state", None) if current_state else None
-                is_on = (entity_state not in _OFF_STATES and entity_state not in _UNAVAILABLE_STATES) if entity_state else False
+                entity_state = (
+                    getattr(current_state, "state", None) if current_state else None
+                )
+                is_on = (
+                    (
+                        entity_state not in _OFF_STATES
+                        and entity_state not in _UNAVAILABLE_STATES
+                    )
+                    if entity_state
+                    else False
+                )
                 _LOGGER.debug(
                     "Skip %s: already %s",
-                    config.name, "on" if is_on else "off",
+                    config.name,
+                    "on" if is_on else "off",
                 )
                 continue
 
@@ -264,9 +290,9 @@ class Controller:
             _LOGGER.info(
                 "Calling %s.%s for %s (%s)",
                 domain,
-                "turn_on" if decision.action == Action.ON else (
-                    "turn_off" if decision.action == Action.OFF else "set_value"
-                ),
+                "turn_on"
+                if decision.action == Action.ON
+                else ("turn_off" if decision.action == Action.OFF else "set_value"),
                 config.name,
                 entity_id,
             )
@@ -300,7 +326,8 @@ class Controller:
         if action.should_limit and action.max_discharge_watts is not None:
             _LOGGER.debug(
                 "Battery discharge limit: %s -> %.0fW",
-                max_discharge_entity, action.max_discharge_watts,
+                max_discharge_entity,
+                action.max_discharge_watts,
             )
             await self.hass.services.async_call(
                 "number",
@@ -313,7 +340,8 @@ class Controller:
         elif max_discharge_default is not None:
             _LOGGER.debug(
                 "Battery discharge limit: %s -> %.0fW (restoring default)",
-                max_discharge_entity, max_discharge_default,
+                max_discharge_entity,
+                max_discharge_default,
             )
             await self.hass.services.async_call(
                 "number",
@@ -360,7 +388,10 @@ class Controller:
 
         if decision.action == Action.ON:
             # Already on - no change needed
-            if entity_state not in _OFF_STATES and entity_state not in _UNAVAILABLE_STATES:
+            if (
+                entity_state not in _OFF_STATES
+                and entity_state not in _UNAVAILABLE_STATES
+            ):
                 return False
         elif decision.action == Action.OFF:
             # Already off - no change needed
