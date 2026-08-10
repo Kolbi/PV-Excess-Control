@@ -1493,8 +1493,8 @@ class Optimizer:
 
             power_needed += dep_power
 
-            # Collect preemptable ON/SET_CURRENT decisions for lower-priority appliances
-            preemptable: list[tuple[str, ApplianceConfig, float]] = []
+            # Collect preemptible ON/SET_CURRENT decisions for lower-priority appliances
+            preemptible: list[tuple[str, ApplianceConfig, float]] = []
             for decision in decisions:
                 if decision.action not in (Action.ON, Action.SET_CURRENT):
                     continue
@@ -1546,16 +1546,16 @@ class Optimizer:
                     if state and state.current_power > 0
                     else app.nominal_power
                 )
-                preemptable.append((app.id, app, freed))
+                preemptible.append((app.id, app, freed))
 
-            # Sort preemptable: highest priority number first (least important first)
-            preemptable.sort(key=lambda item: (-item[1].priority, item[0]))
+            # Sort preemptible: highest priority number first (least important first)
+            preemptible.sort(key=lambda item: (-item[1].priority, item[0]))
 
             # Accumulate freed power until we have enough.
             # Feasibility check uses avg_budget (the conservative turn-on view).
             total_freed = 0.0
             to_preempt: list[tuple[str, ApplianceConfig, float]] = []
-            for p_id, p_app, freed in preemptable:
+            for p_id, p_app, freed in preemptible:
                 to_preempt.append((p_id, p_app, freed))
                 total_freed += freed
                 if avg_budget + total_freed >= power_needed:
