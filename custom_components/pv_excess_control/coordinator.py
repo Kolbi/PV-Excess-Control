@@ -19,7 +19,9 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_ALLOW_GRID_CHARGING,
@@ -146,6 +148,8 @@ _UNAVAILABLE_STATES = {STATE_UNAVAILABLE, STATE_UNKNOWN, "none", ""}
 
 # Maximum number of power history entries to keep (~30 min at 30s intervals)
 MAX_HISTORY_SIZE = 60
+_DAILY_STATE_STORAGE_VERSION = 1
+_DAILY_STATE_SAVE_DELAY = 60
 
 # Multipliers to normalise power values to watts.
 _POWER_UNIT_MULTIPLIERS: dict[str, float] = {
@@ -270,6 +274,12 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_appliance_configs: list[ApplianceConfig] = []
         self.current_plan: Plan | None = None
         self.appliance_states: dict[str, ApplianceState] = {}
+        self._restored_daily_state: dict[str, dict[str, float | int]] = {}
+        self._daily_state_store: Store[dict[str, Any]] = Store(
+            hass,
+            _DAILY_STATE_STORAGE_VERSION,
+            f"{DOMAIN}.{config_entry.entry_id}.daily_state",
+        )
         self.control_decisions: list[ControlDecision] = []
         self.battery_discharge_action: BatteryDischargeAction | None = None
 
@@ -432,6 +442,76 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._planner_interval,
         )
 
+     async def async_restore_daily_state(self) -> None:
+         """Restore today's runtime, energy and activation counters."""
+         data = await self._daily_state_store.async_load()
+         if not data or data.get("date") != dt_util.now().date().isoformat():
+             return
+ 
+         appliances = data.get("appliances")
+         if not isinstance(appliances, dict):
+             return
+ 
+         restored: dict[str, dict[str, float | int]] = {}
+         activations: dict[str, int] = {}
+         for appliance_id, values in appliances.items():
+             if not isinstance(values, dict):
+                 continue
+             try:
+                 runtime_seconds = max(0.0, float(values.get("runtime_seconds", 0.0)))
+                 energy_kwh = max(0.0, float(values.get("energy_kwh", 0.0)))
+                 activation_count = max(0, int(values.get("activations", 0)))
+             except (TypeError, ValueError):
+                 continue
+             restored[appliance_id] = {
+                 "runtime_seconds": runtime_seconds,
+                 "energy_kwh": energy_kwh,
+                 "activations": activation_count,
+             }
+             activations[appliance_id] = activation_count
+ 
+         self._restored_daily_state = restored
+         self._activations_today = activations
+         _LOGGER.debug("Restored daily counters for %d appliances", len(restored))
+ 
+     def _daily_state_data(self) -> dict[str, Any]:
+         """Build serialisable storage data for today's per-appliance counters."""
+         appliances: dict[str, dict[str, float | int]] = {}
+         all_ids = set(self.appliance_states) | set(self._activations_today)
+         for appliance_id in all_ids:
+             state = self.appliance_states.get(appliance_id)
+             restored = self._restored_daily_state.get(appliance_id, {})
+             appliances[appliance_id] = {
+                 "runtime_seconds": (
+                     state.runtime_today.total_seconds()
+                     if state is not None
+                     else float(restored.get("runtime_seconds", 0.0))
+                 ),
+                 "energy_kwh": (
+                     state.energy_today
+                     if state is not None
+                     else float(restored.get("energy_kwh", 0.0))
+                 ),
+                 "activations": self._activations_today.get(
+                     appliance_id, int(restored.get("activations", 0))
+                 ),
+             }
+         return {
+             "date": dt_util.now().date().isoformat(),
+             "appliances": appliances,
+         }
+ 
+     def _schedule_daily_state_save(self) -> None:
+         """Persist counters with a short debounce to avoid excessive disk writes."""
+         self._daily_state_store.async_delay_save(
+             self._daily_state_data, _DAILY_STATE_SAVE_DELAY
+         )
+ 
+     async def async_save_daily_state(self) -> None:
+         """Immediately persist the current daily counters."""
+         await self._daily_state_store.async_save(self._daily_state_data())
+ 
+
     # ------------------------------------------------------------------
     # Inverter grid-charge helpers (Task 10 plumbing)
     # ------------------------------------------------------------------
@@ -580,6 +660,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 new_last_change[key] = self._last_state_change[key]
         self._last_state_change = new_last_change
         self._activations_today.clear()
+        self._restored_daily_state.clear()        
         self.analytics.reset_daily()
         _LOGGER.info("Midnight reset: cleared daily runtime, energy, activations, and analytics counters (ON appliances keep switch interval protection)")
 
@@ -1178,8 +1259,17 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             # Retrieve and update runtime from stored state
             previous = self.appliance_states.get(config.id)
-            runtime_today = previous.runtime_today if previous else timedelta()
-            energy_today = previous.energy_today if previous else 0.0
+             restored = self._restored_daily_state.get(config.id, {})
+             runtime_today = (
+                 previous.runtime_today
+                 if previous
+                 else timedelta(seconds=float(restored.get("runtime_seconds", 0.0)))
+             )
+             energy_today = (
+                 previous.energy_today
+                 if previous
+                 else float(restored.get("energy_kwh", 0.0))
+             )            
             last_state_change = previous.last_state_change if previous else None
 
             # Increment runtime and energy if the appliance is currently ON
@@ -1259,6 +1349,8 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
 
         self.appliance_states = states
+        self._restored_daily_state.clear()
+        self._schedule_daily_state_save()        
         return states
 
     # ------------------------------------------------------------------
