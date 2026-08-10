@@ -4,18 +4,26 @@ from __future__ import annotations
 
 import pytest
 
-from custom_components.pv_excess_control.status_formatter import format_duration
-
 from datetime import datetime, timedelta
 
+from custom_components.pv_excess_control.status_formatter import format_duration
+from custom_components.pv_excess_control.status_formatter import format_status
+
 from custom_components.pv_excess_control.const import Action
+from custom_components.pv_excess_control.const import PlanReason
+
 from custom_components.pv_excess_control.models import (
     ApplianceConfig,
     ApplianceState,
     BatteryDischargeAction,
     ControlDecision,
+    BatteryStrategy,
+    BatteryTarget,
+    Plan,
+    PlanEntry,
+    TariffWindow,
 )
-from custom_components.pv_excess_control.status_formatter import format_status
+
 
 
 class TestFormatDuration:
@@ -492,16 +500,6 @@ class TestFormatStatusBatterySoftLimit:
             now=self.NOW,
         )
         assert "[battery discharge" not in fs.text
-
-
-from custom_components.pv_excess_control.models import (
-    BatteryStrategy,
-    BatteryTarget,
-    Plan,
-    PlanEntry,
-    TariffWindow,
-)
-from custom_components.pv_excess_control.const import PlanReason
 
 
 def _make_plan(entries: list[PlanEntry]) -> Plan:
