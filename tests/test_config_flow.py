@@ -43,6 +43,14 @@ from custom_components.pv_excess_control.const import (
     ForecastProvider,
     InverterType,
     TariffProvider,
+    CONF_AUTO_BATTERY_GRID_CHARGE,
+    CONF_BATTERY_GRID_CHARGE_POWER_W,
+    CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY,
+    CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE,
+    CONF_INVERTER_FORCE_CHARGE_ENABLE_DISENGAGE_VALUE,
+    CONF_INVERTER_FORCE_CHARGE_MODE_ENTITY,
+    CONF_INVERTER_FORCE_CHARGE_MODE_ENGAGE_VALUE,
+    CONF_INVERTER_FORCE_CHARGE_MODE_DISENGAGE_VALUE,
 )
 from custom_components.pv_excess_control.config_flow import (
     PvExcessControlConfigFlow,
@@ -1179,18 +1187,6 @@ class TestDataAccumulation:
 # ---------------------------------------------------------------------------
 # Tests for _validate_battery_section
 # ---------------------------------------------------------------------------
-
-from custom_components.pv_excess_control.const import (
-    CONF_AUTO_BATTERY_GRID_CHARGE,
-    CONF_BATTERY_GRID_CHARGE_POWER_W,
-    CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY,
-    CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE,
-    CONF_INVERTER_FORCE_CHARGE_ENABLE_DISENGAGE_VALUE,
-    CONF_INVERTER_FORCE_CHARGE_MODE_ENTITY,
-    CONF_INVERTER_FORCE_CHARGE_MODE_ENGAGE_VALUE,
-    CONF_INVERTER_FORCE_CHARGE_MODE_DISENGAGE_VALUE,
-)
-
 
 def test_auto_battery_grid_charge_requires_enable_entity_and_power_w():
     from custom_components.pv_excess_control.config_flow import (
