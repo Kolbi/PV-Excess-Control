@@ -24,6 +24,8 @@ from custom_components.pv_excess_control.models import (
     TariffWindow,
 )
 
+from dataclasses import FrozenInstanceError
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -138,7 +140,7 @@ class TestPowerState:
             ev_soc=None,
             timestamp=ts,
         )
-        with pytest.raises(Exception):  # frozen dataclass raises FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             ps.pv_production = 9999.0  # type: ignore[misc]
 
 
