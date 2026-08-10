@@ -308,26 +308,26 @@ class Optimizer:
             if entry.appliance_id != appliance_id:
                 continue
             if entry.action in (Action.ON, Action.SET_CURRENT) and entry.window:
-                  window_start = entry.window.start
-                  window_end = entry.window.end
-                  try:
-                      if window_start <= now <= window_end:
-                          return True
-                  except TypeError:
-                      # Mixed naive/aware — compare as naive
-                      now_naive = now.replace(tzinfo=None)
-                      start_naive = (
-                          window_start.replace(tzinfo=None)
-                          if window_start.tzinfo
-                          else window_start
-                      )
-                      end_naive = (
-                          window_end.replace(tzinfo=None)
-                          if window_end.tzinfo
-                          else window_end
-                      )
-                      if start_naive <= now_naive <= end_naive:
-                          return True
+                window_start = entry.window.start
+                window_end = entry.window.end
+                try:
+                    if window_start <= now <= window_end:
+                        return True
+                except TypeError:
+                    # Mixed naive/aware — compare as naive
+                    now_naive = now.replace(tzinfo=None)
+                    start_naive = (
+                        window_start.replace(tzinfo=None)
+                        if window_start.tzinfo
+                        else window_start
+                    )
+                    end_naive = (
+                        window_end.replace(tzinfo=None)
+                        if window_end.tzinfo
+                        else window_end
+                    )
+                    if start_naive <= now_naive <= end_naive:
+                        return True
         return False
 
     def _has_running_dependent(
