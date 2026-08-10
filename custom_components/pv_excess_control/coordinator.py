@@ -442,37 +442,37 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._planner_interval,
         )
 
-         async def async_restore_daily_state(self) -> None:
-             """Restore today's runtime, energy and activation counters."""
-             data = await self._daily_state_store.async_load()
-             if not data or data.get("date") != dt_util.now().date().isoformat():
-                 return
-     
-             appliances = data.get("appliances")
-             if not isinstance(appliances, dict):
-                 return
-     
-             restored: dict[str, dict[str, float | int]] = {}
-             activations: dict[str, int] = {}
-             for appliance_id, values in appliances.items():
-                 if not isinstance(values, dict):
-                     continue
-                 try:
-                     runtime_seconds = max(0.0, float(values.get("runtime_seconds", 0.0)))
-                     energy_kwh = max(0.0, float(values.get("energy_kwh", 0.0)))
-                     activation_count = max(0, int(values.get("activations", 0)))
-                 except (TypeError, ValueError):
-                     continue
-                 restored[appliance_id] = {
-                     "runtime_seconds": runtime_seconds,
-                     "energy_kwh": energy_kwh,
-                     "activations": activation_count,
-                 }
-                 activations[appliance_id] = activation_count
-     
-             self._restored_daily_state = restored
-             self._activations_today = activations
-             _LOGGER.debug("Restored daily counters for %d appliances", len(restored))
+     async def async_restore_daily_state(self) -> None:
+         """Restore today's runtime, energy and activation counters."""
+         data = await self._daily_state_store.async_load()
+         if not data or data.get("date") != dt_util.now().date().isoformat():
+             return
+ 
+         appliances = data.get("appliances")
+         if not isinstance(appliances, dict):
+             return
+ 
+         restored: dict[str, dict[str, float | int]] = {}
+         activations: dict[str, int] = {}
+         for appliance_id, values in appliances.items():
+             if not isinstance(values, dict):
+                 continue
+             try:
+                 runtime_seconds = max(0.0, float(values.get("runtime_seconds", 0.0)))
+                 energy_kwh = max(0.0, float(values.get("energy_kwh", 0.0)))
+                 activation_count = max(0, int(values.get("activations", 0)))
+             except (TypeError, ValueError):
+                 continue
+             restored[appliance_id] = {
+                 "runtime_seconds": runtime_seconds,
+                 "energy_kwh": energy_kwh,
+                 "activations": activation_count,
+             }
+             activations[appliance_id] = activation_count
+ 
+         self._restored_daily_state = restored
+         self._activations_today = activations
+         _LOGGER.debug("Restored daily counters for %d appliances", len(restored))
  
      def _daily_state_data(self) -> dict[str, Any]:
          """Build serialisable storage data for today's per-appliance counters."""
