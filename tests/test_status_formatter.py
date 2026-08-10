@@ -6,6 +6,17 @@ import pytest
 
 from custom_components.pv_excess_control.status_formatter import format_duration
 
+from datetime import datetime, timedelta
+
+from custom_components.pv_excess_control.const import Action
+from custom_components.pv_excess_control.models import (
+    ApplianceConfig,
+    ApplianceState,
+    BatteryDischargeAction,
+    ControlDecision,
+)
+from custom_components.pv_excess_control.status_formatter import format_status
+
 
 class TestFormatDuration:
     """format_duration renders seconds as compact human-readable strings."""
@@ -81,18 +92,6 @@ class TestFormattedStatus:
         )
         with pytest.raises(Exception):
             fs.text = "mutated"  # type: ignore[misc]
-
-
-from datetime import datetime, timedelta
-
-from custom_components.pv_excess_control.const import Action
-from custom_components.pv_excess_control.models import (
-    ApplianceConfig,
-    ApplianceState,
-    BatteryDischargeAction,
-    ControlDecision,
-)
-from custom_components.pv_excess_control.status_formatter import format_status
 
 
 def _make_config(
