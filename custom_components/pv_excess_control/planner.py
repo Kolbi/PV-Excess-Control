@@ -937,7 +937,6 @@ class Planner:
 
             # Check if this appliance already has enough entries
             app_entries = [e for e in entries if e.appliance_id == appliance.id]
-            current_slots = len(app_entries)
 
             # Calculate how many additional slots to add based on how poor
             # tomorrow is. More poor = more additional slots.

@@ -1830,7 +1830,7 @@ class TestUpdateCycle:
         )
 
         # Must not raise TypeError (or any other exception)
-        data = await coord._async_update_data()
+        await coord._async_update_data()
 
         # PowerState with None fields should be stored in history
         assert len(coord.power_history) == 1
@@ -1992,7 +1992,7 @@ class TestNeededByOthersCooldownBypass:
         coord = _make_coordinator(states=states, entry=entry)
 
         # Populate configs and _needed_by_others
-        configs = coord._get_appliance_configs()
+        coord._get_appliance_configs()
         # Simulate: pool pump was turned off 10 seconds ago (cooldown would
         # normally block the next on-command for 290 more seconds)
         coord._last_state_change["sub_helper"] = datetime.now() - timedelta(seconds=10)

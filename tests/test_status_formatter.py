@@ -4,7 +4,27 @@ from __future__ import annotations
 
 import pytest
 
+from datetime import datetime, timedelta
+
 from custom_components.pv_excess_control.status_formatter import format_duration
+from custom_components.pv_excess_control.status_formatter import format_status
+
+from custom_components.pv_excess_control.const import Action
+from custom_components.pv_excess_control.const import PlanReason
+
+from custom_components.pv_excess_control.models import (
+    ApplianceConfig,
+    ApplianceState,
+    BatteryDischargeAction,
+    ControlDecision,
+    BatteryStrategy,
+    BatteryTarget,
+    Plan,
+    PlanEntry,
+    TariffWindow,
+)
+
+from dataclasses import FrozenInstanceError
 
 
 class TestFormatDuration:
@@ -79,20 +99,8 @@ class TestFormattedStatus:
             plan_window_start=None,
             plan_window_end=None,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             fs.text = "mutated"  # type: ignore[misc]
-
-
-from datetime import datetime, timedelta
-
-from custom_components.pv_excess_control.const import Action
-from custom_components.pv_excess_control.models import (
-    ApplianceConfig,
-    ApplianceState,
-    BatteryDischargeAction,
-    ControlDecision,
-)
-from custom_components.pv_excess_control.status_formatter import format_status
 
 
 def _make_config(
@@ -493,16 +501,6 @@ class TestFormatStatusBatterySoftLimit:
             now=self.NOW,
         )
         assert "[battery discharge" not in fs.text
-
-
-from custom_components.pv_excess_control.models import (
-    BatteryStrategy,
-    BatteryTarget,
-    Plan,
-    PlanEntry,
-    TariffWindow,
-)
-from custom_components.pv_excess_control.const import PlanReason
 
 
 def _make_plan(entries: list[PlanEntry]) -> Plan:

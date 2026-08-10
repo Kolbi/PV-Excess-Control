@@ -24,6 +24,8 @@ from custom_components.pv_excess_control.models import (
     TariffWindow,
 )
 
+from dataclasses import FrozenInstanceError
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -138,7 +140,7 @@ class TestPowerState:
             ev_soc=None,
             timestamp=ts,
         )
-        with pytest.raises(Exception):  # frozen dataclass raises FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             ps.pv_production = 9999.0  # type: ignore[misc]
 
 
@@ -267,7 +269,7 @@ class TestTariffWindow:
         start = datetime(2026, 3, 22, 10, 0, tzinfo=UTC)
         end = datetime(2026, 3, 22, 11, 0, tzinfo=UTC)
         w = TariffWindow(start=start, end=end, price=0.10, is_cheap=False)
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             w.price = 0.99  # type: ignore[misc]
 
 
@@ -375,7 +377,7 @@ class TestControlDecision:
             reason="test",
             overrides_plan=False,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             decision.action = Action.OFF  # type: ignore[misc]
 
 
@@ -492,7 +494,7 @@ class TestOptimizerResult:
 
     def test_battery_discharge_action_is_frozen(self):
         bda = BatteryDischargeAction(should_limit=True, max_discharge_watts=2000.0)
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             bda.should_limit = False  # type: ignore[misc]
 
     def test_optimizer_result_decisions_mutable(self):
@@ -586,7 +588,7 @@ class TestBatteryConfig:
             strategy=BatteryStrategy.BALANCED,
             allow_grid_charging=False,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             cfg.target_soc = 50.0  # type: ignore[misc]
 
 
@@ -653,5 +655,5 @@ class TestBatteryTarget:
             target_time=_utcnow(),
             strategy=BatteryStrategy.BALANCED,
         )
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             bt.target_soc = 50.0  # type: ignore[misc]

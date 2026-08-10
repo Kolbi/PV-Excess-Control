@@ -1268,25 +1268,24 @@ class PvExcessControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle the global settings step and create the config entry."""
         errors: dict[str, str] = {}
 
-        if user_input is not None:
-            if not errors:
-                # Convert string interval values to integers
-                controller_interval = int(
-                    user_input.get(
-                        CONF_CONTROLLER_INTERVAL, str(DEFAULT_CONTROLLER_INTERVAL)
-                    )
+        if user_input is not None and not errors:
+            # Convert string interval values to integers
+            controller_interval = int(
+                user_input.get(
+                    CONF_CONTROLLER_INTERVAL, str(DEFAULT_CONTROLLER_INTERVAL)
                 )
-                planner_interval = int(
-                    user_input.get(CONF_PLANNER_INTERVAL, str(DEFAULT_PLANNER_INTERVAL))
-                )
-                user_input[CONF_CONTROLLER_INTERVAL] = controller_interval
-                user_input[CONF_PLANNER_INTERVAL] = planner_interval
+            )
+            planner_interval = int(
+                user_input.get(CONF_PLANNER_INTERVAL, str(DEFAULT_PLANNER_INTERVAL))
+            )
+            user_input[CONF_CONTROLLER_INTERVAL] = controller_interval
+            user_input[CONF_PLANNER_INTERVAL] = planner_interval
 
-                self.data.update(user_input)
-                return self.async_create_entry(
-                    title="PV Excess Control",
-                    data=self.data,
-                )
+            self.data.update(user_input)
+            return self.async_create_entry(
+                title="PV Excess Control",
+                data=self.data,
+            )
 
         return self.async_show_form(
             step_id="settings",

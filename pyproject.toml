@@ -12,3 +12,6 @@ select = [
     "SIM",
     "G",
 ]
+
+[tool.codespell]
+skip = 'README.de.md'

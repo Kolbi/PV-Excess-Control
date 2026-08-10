@@ -469,7 +469,7 @@ class TestControllerEdgeCases:
             ),
         ]
 
-        applied = await controller.apply_decisions(decisions, configs)
+        await controller.apply_decisions(decisions, configs)
 
         # Applied tracks that we attempted the state change, but _turn_on does nothing
         # for unknown domains. The decision is still "applied" (logged) but no service called.
