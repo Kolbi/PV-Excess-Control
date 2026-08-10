@@ -15,7 +15,7 @@
 #
 #   2. For each appliance, duplicate one of the appliance series blocks and
 #      change:
-#        - name:              your appliance name (as configured in PV Excess 
+#        - name:              your appliance name (as configured in PV Excess
 #                             Control)
 #        - color:             a distinct hex color
 #        - const name = '…':  must match the appliance name exactly
@@ -26,11 +26,11 @@
 # Prerequisites:
 #   - apexcharts-card installed via HACS (Frontend)
 #   - PV Excess Control integration with planner enabled
-#   - A tariff provider configured that exposes price windows in sensor 
+#   - A tariff provider configured that exposes price windows in sensor
 #     attributes
 #
 # Tariff provider notes:
-#   - Octopus Energy: uses "rates" attribute with "value_inc_vat" field 
+#   - Octopus Energy: uses "rates" attribute with "value_inc_vat" field
 #                     (default)
 #   - Tibber:         uses "today" / "tomorrow" attributes with "total" field
 #   - Nordpool:       uses "raw_today" / "raw_tomorrow" with "value" field
