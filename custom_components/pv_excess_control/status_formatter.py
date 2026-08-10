@@ -265,9 +265,7 @@ def _should_show_battery_limit(
         return False
     if not config.is_big_consumer:
         return False
-    if "Battery SoC protection" in decision.reason:
-        return False
-    return True
+    return "Battery SoC protection" not in decision.reason
 
 
 def _find_matching_plan_entry(
