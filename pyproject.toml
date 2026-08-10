@@ -15,6 +15,3 @@ select = [
 
 [tool.codespell]
 skip = 'README.de.md'
-
-[tool.yamllint]
-ignore = 'docs/dashboard/*.yaml'
