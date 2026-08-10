@@ -128,7 +128,7 @@ async def test_grid_charge_disengages_when_price_rises_above_threshold(
         inverter_ctl=mock_inverter_controller,
     )
 
-    with freeze_time() as ft:
+    with freeze_time():
         # Engage
         await coordinator._run_grid_charge_state_machine(
             mock_tariff_at(0.01, 0.02),
