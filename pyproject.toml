@@ -13,5 +13,5 @@ select = [
     "G",
 ]
 
-[codespell]
+[tool.codespell]
 skip = 'README.de.md'
