@@ -9,12 +9,15 @@ PV Excess Control integrates with hybrid inverter systems to make battery-aware 
 Three strategies control how the battery is treated relative to appliances:
 
 ### Battery First
+
 The battery is charged to the target SoC before any appliances are turned on. Best for maximizing self-sufficiency -- the battery is always ready for the evening.
 
 ### Appliance First
+
 Appliances run using solar excess before any power goes to the battery. Best for time-sensitive tasks (EV charging deadline, dishwasher cycle) where you want maximum runtime during solar hours.
 
 ### Balanced
+
 Excess solar is split proportionally between battery charging and appliances. The split is calculated so that both reach their targets at the same time.
 
 ---
@@ -24,6 +27,7 @@ Excess solar is split proportionally between battery charging and appliances. Th
 Set a **Target SoC** (e.g. 80 %) and **Target Time** (e.g. 07:00) to tell the planner when the battery needs to be ready.
 
 The planner uses the forecast to calculate:
+
 1. How much energy is needed to reach the target (`capacity x (target_soc - current_soc) / 100`)
 2. Which hours have sufficient solar excess to charge
 3. Whether grid charging is needed to meet the deadline

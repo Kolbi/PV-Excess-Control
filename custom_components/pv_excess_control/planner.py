@@ -6,10 +6,11 @@ pre-planning and export limit management, and outputs a complete Plan.
 
 Pure Python - no HA dependencies.
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from .models import (
@@ -49,7 +50,9 @@ class Planner:
         try:
             self.tz = ZoneInfo(timezone_str)
         except Exception:
-            _LOGGER.warning("Planner: unknown timezone %r, falling back to UTC", timezone_str)
+            _LOGGER.warning(
+                "Planner: unknown timezone %r, falling back to UTC", timezone_str
+            )
             self.tz = ZoneInfo("UTC")
 
     # ------------------------------------------------------------------
@@ -88,16 +91,18 @@ class Planner:
                 return []
             tariff_windows = []
             for hf in forecast.hourly_breakdown:
-                tariff_windows.append(TariffWindow(
-                    start=hf.start, end=hf.end,
-                    price=0.0, is_cheap=False,
-                ))
+                tariff_windows.append(
+                    TariffWindow(
+                        start=hf.start,
+                        end=hf.end,
+                        price=0.0,
+                        is_cheap=False,
+                    )
+                )
 
         # Sort tariff windows and forecasts chronologically
         sorted_tariffs = sorted(tariff_windows, key=lambda tw: tw.start)
-        sorted_forecasts = sorted(
-            forecast.hourly_breakdown, key=lambda hf: hf.start
-        )
+        sorted_forecasts = sorted(forecast.hourly_breakdown, key=lambda hf: hf.start)
 
         raw_slots: list[TimeSlot] = []
 
@@ -108,14 +113,16 @@ class Planner:
             if not overlapping:
                 # No forecast data for this window -> slot with 0 solar
                 excess = max(0.0 - base_load_watts, 0.0)
-                raw_slots.append(TimeSlot(
-                    start=tw.start,
-                    end=tw.end,
-                    expected_solar_watts=0.0,
-                    expected_excess_watts=excess,
-                    price=tw.price,
-                    is_cheap=tw.is_cheap,
-                ))
+                raw_slots.append(
+                    TimeSlot(
+                        start=tw.start,
+                        end=tw.end,
+                        expected_solar_watts=0.0,
+                        expected_excess_watts=excess,
+                        price=tw.price,
+                        is_cheap=tw.is_cheap,
+                    )
+                )
             else:
                 # Subdivide: create a sub-slot for each forecast entry
                 # that falls within this tariff window
@@ -128,14 +135,16 @@ class Planner:
                         continue
 
                     excess = max(fc.expected_watts - base_load_watts, 0.0)
-                    raw_slots.append(TimeSlot(
-                        start=slot_start,
-                        end=slot_end,
-                        expected_solar_watts=fc.expected_watts,
-                        expected_excess_watts=excess,
-                        price=tw.price,
-                        is_cheap=tw.is_cheap,
-                    ))
+                    raw_slots.append(
+                        TimeSlot(
+                            start=slot_start,
+                            end=slot_end,
+                            expected_solar_watts=fc.expected_watts,
+                            expected_excess_watts=excess,
+                            price=tw.price,
+                            is_cheap=tw.is_cheap,
+                        )
+                    )
 
         # Sort by start time
         raw_slots.sort(key=lambda s: s.start)
@@ -166,14 +175,16 @@ class Planner:
         if not slots:
             return []
 
-        merged: list[TimeSlot] = [TimeSlot(
-            start=slots[0].start,
-            end=slots[0].end,
-            expected_solar_watts=slots[0].expected_solar_watts,
-            expected_excess_watts=slots[0].expected_excess_watts,
-            price=slots[0].price,
-            is_cheap=slots[0].is_cheap,
-        )]
+        merged: list[TimeSlot] = [
+            TimeSlot(
+                start=slots[0].start,
+                end=slots[0].end,
+                expected_solar_watts=slots[0].expected_solar_watts,
+                expected_excess_watts=slots[0].expected_excess_watts,
+                price=slots[0].price,
+                is_cheap=slots[0].is_cheap,
+            )
+        ]
 
         for slot in slots[1:]:
             prev = merged[-1]
@@ -193,14 +204,16 @@ class Planner:
                     is_cheap=prev.is_cheap,
                 )
             else:
-                merged.append(TimeSlot(
-                    start=slot.start,
-                    end=slot.end,
-                    expected_solar_watts=slot.expected_solar_watts,
-                    expected_excess_watts=slot.expected_excess_watts,
-                    price=slot.price,
-                    is_cheap=slot.is_cheap,
-                ))
+                merged.append(
+                    TimeSlot(
+                        start=slot.start,
+                        end=slot.end,
+                        expected_solar_watts=slot.expected_solar_watts,
+                        expected_excess_watts=slot.expected_excess_watts,
+                        price=slot.price,
+                        is_cheap=slot.is_cheap,
+                    )
+                )
 
         return merged
 
@@ -234,8 +247,7 @@ class Planner:
         if charging_needed_kwh <= 0.0 or not timeline:
             # No charging needed or no slots to work with
             excess_after = {
-                i: self._slot_excess_kwh(slot)
-                for i, slot in enumerate(timeline)
+                i: self._slot_excess_kwh(slot) for i, slot in enumerate(timeline)
             }
             return BatteryAllocation(
                 charging_needed_kwh=charging_needed_kwh,
@@ -280,8 +292,7 @@ class Planner:
         Battery charges from whatever is left over (handled at runtime).
         """
         excess_after = {
-            i: self._slot_excess_kwh(slot)
-            for i, slot in enumerate(timeline)
+            i: self._slot_excess_kwh(slot) for i, slot in enumerate(timeline)
         }
         return BatteryAllocation(
             charging_needed_kwh=charging_needed_kwh,
@@ -350,7 +361,11 @@ class Planner:
                 # Calculate how much energy this slot can actually provide (based on duration)
                 slot_hours = (slot.end - slot.start).total_seconds() / 3600
                 # Assume C/4 charge rate (conservative 4-hour full charge), capped at 10 kW
-                max_charge_rate_kw = min(battery_config.capacity_kwh / 4, 10.0) if battery_config.capacity_kwh > 0 else 5.0
+                max_charge_rate_kw = (
+                    min(battery_config.capacity_kwh / 4, 10.0)
+                    if battery_config.capacity_kwh > 0
+                    else 5.0
+                )
                 slot_capacity = max_charge_rate_kw * slot_hours
                 can_provide = min(slot_capacity, remaining_need)
                 allocate = can_provide
@@ -450,7 +465,9 @@ class Planner:
         sorted_appliances = sorted(appliances, key=lambda a: a.priority)
 
         # Track remaining excess per slot (will be consumed as appliances are allocated)
-        remaining_excess: dict[int, float] = dict(battery_allocation.excess_after_battery)
+        remaining_excess: dict[int, float] = dict(
+            battery_allocation.excess_after_battery
+        )
 
         for appliance in sorted_appliances:
             app_entries = self._schedule_single_appliance(
@@ -487,10 +504,7 @@ class Planner:
 
         # Calculate energy needed in kWh
         energy_needed_kwh = (
-            appliance.nominal_power
-            * min_daily_runtime_seconds
-            / 3600.0
-            / 1000.0
+            appliance.nominal_power * min_daily_runtime_seconds / 3600.0 / 1000.0
         )
 
         if energy_needed_kwh <= 0:
@@ -502,12 +516,20 @@ class Planner:
         # Handle deadline-constrained scheduling
         if appliance.schedule_deadline is not None:
             return self._schedule_with_deadline(
-                timeline, remaining_excess, appliance, energy_needed_kwh, power_kwh_per_hour
+                timeline,
+                remaining_excess,
+                appliance,
+                energy_needed_kwh,
+                power_kwh_per_hour,
             )
 
         # Standard greedy scheduling (no deadline)
         return self._schedule_greedy(
-            timeline, remaining_excess, appliance, energy_needed_kwh, power_kwh_per_hour,
+            timeline,
+            remaining_excess,
+            appliance,
+            energy_needed_kwh,
+            power_kwh_per_hour,
             cheap_price_threshold,
         )
 
@@ -526,7 +548,8 @@ class Planner:
 
         # Tier 1: Slots with excess solar
         excess_slots = [
-            (i, slot) for i, slot in enumerate(timeline)
+            (i, slot)
+            for i, slot in enumerate(timeline)
             if remaining_excess.get(i, 0.0) > 0
         ]
         # Sort excess slots by most excess first for best utilization
@@ -537,21 +560,36 @@ class Planner:
                 break
             pre_excess = remaining_excess.get(idx, 0.0)
             consumed = self._allocate_slot(
-                slot, idx, remaining_excess, appliance, remaining_energy, power_kwh_per_hour
+                slot,
+                idx,
+                remaining_excess,
+                appliance,
+                remaining_energy,
+                power_kwh_per_hour,
             )
             if consumed > 0:
-                target_current = self._calculate_target_current(appliance, slot, pre_excess)
-                entries.append(PlanEntry(
-                    appliance_id=appliance.id,
-                    action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                    target_current=target_current if appliance.dynamic_current else None,
-                    window=TariffWindow(
-                        start=slot.start, end=slot.end,
-                        price=slot.price, is_cheap=slot.is_cheap,
-                    ),
-                    reason=PlanReason.EXCESS_AVAILABLE,
-                    priority=appliance.priority,
-                ))
+                target_current = self._calculate_target_current(
+                    appliance, slot, pre_excess
+                )
+                entries.append(
+                    PlanEntry(
+                        appliance_id=appliance.id,
+                        action=Action.SET_CURRENT
+                        if appliance.dynamic_current
+                        else Action.ON,
+                        target_current=target_current
+                        if appliance.dynamic_current
+                        else None,
+                        window=TariffWindow(
+                            start=slot.start,
+                            end=slot.end,
+                            price=slot.price,
+                            is_cheap=slot.is_cheap,
+                        ),
+                        reason=PlanReason.EXCESS_AVAILABLE,
+                        priority=appliance.priority,
+                    )
+                )
                 remaining_energy -= consumed
 
         # Tier 2: Cheap tariff slots (if grid supplementation allowed)
@@ -562,7 +600,8 @@ class Planner:
                 else cheap_price_threshold
             )
             cheap_slots = [
-                (i, slot) for i, slot in enumerate(timeline)
+                (i, slot)
+                for i, slot in enumerate(timeline)
                 if slot.price <= effective_threshold
             ]
             # Sort cheap slots by price ascending
@@ -586,18 +625,28 @@ class Planner:
                 slot_excess = remaining_excess.get(idx, 0.0)
                 consumed = min(power_kwh_per_hour * duration_hours, remaining_energy)
                 if consumed > 0:
-                    target_current = self._calculate_target_current(appliance, slot, slot_excess)
-                    entries.append(PlanEntry(
-                        appliance_id=appliance.id,
-                        action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                        target_current=target_current if appliance.dynamic_current else None,
-                        window=TariffWindow(
-                            start=slot.start, end=slot.end,
-                            price=slot.price, is_cheap=slot.is_cheap,
-                        ),
-                        reason=PlanReason.CHEAP_TARIFF,
-                        priority=appliance.priority,
-                    ))
+                    target_current = self._calculate_target_current(
+                        appliance, slot, slot_excess
+                    )
+                    entries.append(
+                        PlanEntry(
+                            appliance_id=appliance.id,
+                            action=Action.SET_CURRENT
+                            if appliance.dynamic_current
+                            else Action.ON,
+                            target_current=target_current
+                            if appliance.dynamic_current
+                            else None,
+                            window=TariffWindow(
+                                start=slot.start,
+                                end=slot.end,
+                                price=slot.price,
+                                is_cheap=slot.is_cheap,
+                            ),
+                            reason=PlanReason.CHEAP_TARIFF,
+                            priority=appliance.priority,
+                        )
+                    )
                     remaining_energy -= consumed
                     # Deduct solar portion from remaining excess (grid portion doesn't consume solar)
                     if slot_excess > 0:
@@ -606,9 +655,7 @@ class Planner:
 
         # Tier 3: Any remaining slots (for must-run appliances that still need runtime)
         if remaining_energy > 0 and appliance.min_daily_runtime is not None:
-            all_slots = [
-                (i, slot) for i, slot in enumerate(timeline)
-            ]
+            all_slots = [(i, slot) for i, slot in enumerate(timeline)]
             # Sort by price ascending
             all_slots.sort(key=lambda x: x[1].price)
 
@@ -630,18 +677,28 @@ class Planner:
                 slot_excess = remaining_excess.get(idx, 0.0)
                 consumed = min(power_kwh_per_hour * duration_hours, remaining_energy)
                 if consumed > 0:
-                    target_current = self._calculate_target_current(appliance, slot, slot_excess)
-                    entries.append(PlanEntry(
-                        appliance_id=appliance.id,
-                        action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                        target_current=target_current if appliance.dynamic_current else None,
-                        window=TariffWindow(
-                            start=slot.start, end=slot.end,
-                            price=slot.price, is_cheap=slot.is_cheap,
-                        ),
-                        reason=PlanReason.MIN_RUNTIME,
-                        priority=appliance.priority,
-                    ))
+                    target_current = self._calculate_target_current(
+                        appliance, slot, slot_excess
+                    )
+                    entries.append(
+                        PlanEntry(
+                            appliance_id=appliance.id,
+                            action=Action.SET_CURRENT
+                            if appliance.dynamic_current
+                            else Action.ON,
+                            target_current=target_current
+                            if appliance.dynamic_current
+                            else None,
+                            window=TariffWindow(
+                                start=slot.start,
+                                end=slot.end,
+                                price=slot.price,
+                                is_cheap=slot.is_cheap,
+                            ),
+                            reason=PlanReason.MIN_RUNTIME,
+                            priority=appliance.priority,
+                        )
+                    )
                     remaining_energy -= consumed
                     # Deduct solar portion from remaining excess (grid portion doesn't consume solar)
                     if slot_excess > 0:
@@ -673,7 +730,13 @@ class Planner:
         # A deadline before noon suggests overnight scheduling (e.g., "EV by 7am")
         is_overnight = deadline < time(12, 0)
         for i, slot in enumerate(timeline):
-            slot_start_time = slot.start.astimezone(self.tz).time() if hasattr(slot.start, 'astimezone') else slot.start.time() if hasattr(slot.start, 'time') else slot.start
+            slot_start_time = (
+                slot.start.astimezone(self.tz).time()
+                if hasattr(slot.start, "astimezone")
+                else slot.start.time()
+                if hasattr(slot.start, "time")
+                else slot.start
+            )
             if is_overnight:
                 # For overnight: include slots starting before deadline OR after noon (afternoon/evening/night)
                 if slot_start_time < deadline or slot_start_time >= time(12, 0):
@@ -687,7 +750,8 @@ class Planner:
             _LOGGER.warning(
                 "No eligible slots before deadline %s for appliance %s "
                 "(deadline may be past)",
-                deadline, appliance.name,
+                deadline,
+                appliance.name,
             )
             return []
 
@@ -717,24 +781,39 @@ class Planner:
             reason = PlanReason.DEADLINE
             if slot_excess > 0:
                 consumed = self._allocate_slot(
-                    slot, idx, remaining_excess, appliance, remaining_energy, power_kwh_per_hour
+                    slot,
+                    idx,
+                    remaining_excess,
+                    appliance,
+                    remaining_energy,
+                    power_kwh_per_hour,
                 )
             else:
                 consumed = min(power_kwh_per_hour * duration_hours, remaining_energy)
 
             if consumed > 0:
-                target_current = self._calculate_target_current(appliance, slot, slot_excess)
-                entries.append(PlanEntry(
-                    appliance_id=appliance.id,
-                    action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                    target_current=target_current if appliance.dynamic_current else None,
-                    window=TariffWindow(
-                        start=slot.start, end=slot.end,
-                        price=slot.price, is_cheap=slot.is_cheap,
-                    ),
-                    reason=reason,
-                    priority=appliance.priority,
-                ))
+                target_current = self._calculate_target_current(
+                    appliance, slot, slot_excess
+                )
+                entries.append(
+                    PlanEntry(
+                        appliance_id=appliance.id,
+                        action=Action.SET_CURRENT
+                        if appliance.dynamic_current
+                        else Action.ON,
+                        target_current=target_current
+                        if appliance.dynamic_current
+                        else None,
+                        window=TariffWindow(
+                            start=slot.start,
+                            end=slot.end,
+                            price=slot.price,
+                            is_cheap=slot.is_cheap,
+                        ),
+                        reason=reason,
+                        priority=appliance.priority,
+                    )
+                )
                 remaining_energy -= consumed
 
         return entries
@@ -901,18 +980,28 @@ class Planner:
 
                 if consumed > 0:
                     remaining_excess[i] = slot_excess - consumed
-                    target_current = self._calculate_target_current(appliance, slot, slot_excess)
-                    additional_entries.append(PlanEntry(
-                        appliance_id=appliance.id,
-                        action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                        target_current=target_current if appliance.dynamic_current else None,
-                        window=TariffWindow(
-                            start=slot.start, end=slot.end,
-                            price=slot.price, is_cheap=slot.is_cheap,
-                        ),
-                        reason=PlanReason.WEATHER_PREPLANNING,
-                        priority=appliance.priority,
-                    ))
+                    target_current = self._calculate_target_current(
+                        appliance, slot, slot_excess
+                    )
+                    additional_entries.append(
+                        PlanEntry(
+                            appliance_id=appliance.id,
+                            action=Action.SET_CURRENT
+                            if appliance.dynamic_current
+                            else Action.ON,
+                            target_current=target_current
+                            if appliance.dynamic_current
+                            else None,
+                            window=TariffWindow(
+                                start=slot.start,
+                                end=slot.end,
+                                price=slot.price,
+                                is_cheap=slot.is_cheap,
+                            ),
+                            reason=PlanReason.WEATHER_PREPLANNING,
+                            priority=appliance.priority,
+                        )
+                    )
                     extra_energy_needed -= consumed
 
         return entries + additional_entries
@@ -994,17 +1083,25 @@ class Planner:
                     target_current = self._calculate_target_current(
                         appliance, slot, curtailed_watts * duration_hours / 1000.0
                     )
-                    additional_entries.append(PlanEntry(
-                        appliance_id=appliance.id,
-                        action=Action.SET_CURRENT if appliance.dynamic_current else Action.ON,
-                        target_current=target_current if appliance.dynamic_current else None,
-                        window=TariffWindow(
-                            start=slot.start, end=slot.end,
-                            price=slot.price, is_cheap=slot.is_cheap,
-                        ),
-                        reason=PlanReason.EXPORT_LIMIT,
-                        priority=appliance.priority,
-                    ))
+                    additional_entries.append(
+                        PlanEntry(
+                            appliance_id=appliance.id,
+                            action=Action.SET_CURRENT
+                            if appliance.dynamic_current
+                            else Action.ON,
+                            target_current=target_current
+                            if appliance.dynamic_current
+                            else None,
+                            window=TariffWindow(
+                                start=slot.start,
+                                end=slot.end,
+                                price=slot.price,
+                                is_cheap=slot.is_cheap,
+                            ),
+                            reason=PlanReason.EXPORT_LIMIT,
+                            priority=appliance.priority,
+                        )
+                    )
                     # Update remaining excess
                     slot_excess = remaining_excess.get(idx, 0.0)
                     remaining_excess[idx] = max(slot_excess - consumed, 0.0)
@@ -1070,8 +1167,7 @@ class Planner:
                 charging_needed_kwh=0.0,
                 slots_reserved=[],
                 excess_after_battery={
-                    i: self._slot_excess_kwh(slot)
-                    for i, slot in enumerate(timeline)
+                    i: self._slot_excess_kwh(slot) for i, slot in enumerate(timeline)
                 },
             )
             battery_target = BatteryTarget(
@@ -1082,7 +1178,9 @@ class Planner:
 
         # 3. Schedule appliances
         entries = self.schedule_appliances(
-            timeline, battery_allocation, appliances,
+            timeline,
+            battery_allocation,
+            appliances,
             cheap_price_threshold=tariff.cheap_price_threshold,
         )
 
@@ -1097,7 +1195,12 @@ class Planner:
 
         # 5. Apply export limit management
         entries = self.apply_export_limit(
-            entries, timeline, remaining_excess, appliances, export_limit, base_load_watts
+            entries,
+            timeline,
+            remaining_excess,
+            appliances,
+            export_limit,
+            base_load_watts,
         )
 
         # 6. Calculate confidence and build plan
@@ -1120,7 +1223,9 @@ class Planner:
         )
         _LOGGER.debug(
             "Planner: %d timeline slots, %d plan entries, confidence=%.1f%%",
-            len(timeline), len(plan.entries), plan.confidence * 100,
+            len(timeline),
+            len(plan.entries),
+            plan.confidence * 100,
         )
         return plan
 
@@ -1146,7 +1251,9 @@ class Planner:
                 if slot.start == entry.window.start and slot.end == entry.window.end:
                     current = remaining_excess.get(i, 0.0)
                     if current > 0:
-                        duration_hours = (slot.end - slot.start).total_seconds() / 3600.0
+                        duration_hours = (
+                            slot.end - slot.start
+                        ).total_seconds() / 3600.0
                         power = app_power.get(entry.appliance_id, 0.0)
                         consumed_kwh = power / 1000.0 * duration_hours
                         remaining_excess[i] = max(current - consumed_kwh, 0.0)
@@ -1181,7 +1288,9 @@ class Planner:
             confidence += min(coverage, 1.0) * 0.2
 
         # Reduce if many entries depend on uncertain sources
-        excess_entries = sum(1 for e in entries if e.reason == PlanReason.EXCESS_AVAILABLE)
+        excess_entries = sum(
+            1 for e in entries if e.reason == PlanReason.EXCESS_AVAILABLE
+        )
         total_entries = len(entries)
         if total_entries > 0:
             forecast_dependency = excess_entries / total_entries

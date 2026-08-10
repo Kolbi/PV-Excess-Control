@@ -1,4 +1,5 @@
 """Switch platform for PV Excess Control."""
+
 from __future__ import annotations
 
 import logging
@@ -11,7 +12,12 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_APPLIANCE_NAME, CONF_BATTERY_GRID_CHARGE_POWER_W, DOMAIN, MANUFACTURER
+from .const import (
+    CONF_APPLIANCE_NAME,
+    CONF_BATTERY_GRID_CHARGE_POWER_W,
+    DOMAIN,
+    MANUFACTURER,
+)
 from .coordinator import PvExcessCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,9 +39,15 @@ async def async_setup_entry(
     # Per-appliance switches
     subentries = getattr(config_entry, "subentries", {})
     for subentry_id, subentry in subentries.items():
-        appliance_name = subentry.data.get(CONF_APPLIANCE_NAME, f"Appliance {subentry_id}")
-        entities.append(ApplianceEnabledSwitch(coordinator, subentry_id, appliance_name))
-        entities.append(ApplianceOverrideSwitch(coordinator, subentry_id, appliance_name))
+        appliance_name = subentry.data.get(
+            CONF_APPLIANCE_NAME, f"Appliance {subentry_id}"
+        )
+        entities.append(
+            ApplianceEnabledSwitch(coordinator, subentry_id, appliance_name)
+        )
+        entities.append(
+            ApplianceOverrideSwitch(coordinator, subentry_id, appliance_name)
+        )
 
     async_add_entities(entities)
 
@@ -114,7 +126,9 @@ class ForceChargeSwitch(_PvExcessSwitchBase):
             self.coordinator._inverter_ctl is not None
             and not self.coordinator._grid_charge_engaged
         ):
-            power_w = self.coordinator.config_entry.data.get(CONF_BATTERY_GRID_CHARGE_POWER_W)
+            power_w = self.coordinator.config_entry.data.get(
+                CONF_BATTERY_GRID_CHARGE_POWER_W
+            )
             if power_w is not None:
                 await self.coordinator._inverter_ctl.engage(power_w)
                 self.coordinator._grid_charge_engaged = True
@@ -163,7 +177,8 @@ class ApplianceEnabledSwitch(_PvExcessSwitchBase):
     def _persist_disabled_list(self) -> None:
         """Persist the list of disabled appliance IDs to config_entry.data."""
         disabled = [
-            aid for aid, enabled in self.coordinator.appliance_enabled.items()
+            aid
+            for aid, enabled in self.coordinator.appliance_enabled.items()
             if not enabled
         ]
         self._persist("disabled_appliances", disabled)
@@ -183,7 +198,10 @@ class ApplianceEnabledSwitch(_PvExcessSwitchBase):
             domain = entity_id.split(".")[0] if "." in entity_id else "switch"
             try:
                 await self.hass.services.async_call(
-                    domain, "turn_off", {"entity_id": entity_id}, blocking=True,
+                    domain,
+                    "turn_off",
+                    {"entity_id": entity_id},
+                    blocking=True,
                 )
             except Exception:
                 pass  # Best effort
@@ -216,8 +234,7 @@ class ApplianceOverrideSwitch(_PvExcessSwitchBase):
     def _persist_overridden_list(self) -> None:
         """Persist the list of overridden appliance IDs to config_entry.data."""
         overridden = [
-            aid for aid, ov in self.coordinator.appliance_overrides.items()
-            if ov
+            aid for aid, ov in self.coordinator.appliance_overrides.items() if ov
         ]
         self._persist("overridden_appliances", overridden)
 

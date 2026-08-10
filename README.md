@@ -11,7 +11,6 @@
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa)](https://github.com/sponsors/InventoCasa)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%E2%98%95-FFDD00)](https://buymeacoffee.com/henrikic)
 
-
 ## About
 
 PV Excess Control is built and maintained by Henrik Wasserfuhr, founder of [**InventoCasa**](https://inventocasa.de). We are specialized smart home integrators, designing and deploying complete Home Assistant environments for new builds, renovations, and retrofits.
@@ -23,6 +22,7 @@ This integration is open source because I believe in giving back to the communit
 ## Features
 
 ### Core Optimization & Planning
+
 - **Smart Planning** - 24-hour forward-looking optimizer with weather-aware pre-planning and configurable plan influence.
 - **Priority-Based Appliance Control** - Manage multiple appliances with configurable priorities (1-1000).
 - **Opportunity Cost** - Factors in feed-in tariff revenue when making decisions.
@@ -31,6 +31,7 @@ This integration is open source because I believe in giving back to the communit
 - **Min/Max Runtime & Time Windows** - Ensure appliances run for required durations and restrict them to specific hours.
 
 ### EV & Battery Management
+
 - **EV SoC-Aware Charging** - Considers EV battery level, connection status, and user-defined targets.
 - **Schedule Deadlines** - Set constraints like "EV must be charged by 7am".
 - **Dynamic Current Control** - Variable amperage for EV chargers and wallboxes (6-32 A).
@@ -39,11 +40,13 @@ This integration is open source because I believe in giving back to the communit
 - **Battery Discharge Protection** - Limit discharge rate when big consumers are running.
 
 ### Tariffs & Grid
+
 - **Tariff Integration** - Support for Tibber, Awattar, Nordpool, Octopus Energy, and generic price sensors.
 - **Export Limit Management** - Absorb would-be-curtailed power when feed-in caps apply.
 - **Grid Supplementation** - Allow a small amount of grid power to top up appliances.
 
 ### UI, Analytics & Integrations
+
 - **Solar Forecast Integration** - Solcast, Forecast.Solar, and generic forecast sensors.
 - **Extensive Dashboard Examples** — Build your own dashboard with Mushroom, ApexCharts and other community cards. [Full YAML examples included](docs/dashboard-examples.md).
 - **Self-Consumption Analytics** - Track savings, self-consumption ratio, energy statistics.
@@ -134,12 +137,12 @@ pip install -r requirements_test.txt
 python3 -m pytest tests/ --ignore=tests/playwright --ignore=tests/ha_integration_test.py
 ```
 
-
 ## License
 
 This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** - see the [LICENSE](LICENSE) file for details.
 
 **What this means:**
+
 - **Personal use** - fully free, no restrictions
 - **Commercial use** - if you integrate this into a product or service, you must open-source your entire work under AGPL-3.0
 - **Commercial licensing** - for proprietary/commercial use without the AGPL obligations, [contact InventoCasa](https://inventocasa.de/kontakt/) for a commercial license

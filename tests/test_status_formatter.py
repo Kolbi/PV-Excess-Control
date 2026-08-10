@@ -1,4 +1,5 @@
 """Tests for the status_formatter module."""
+
 from __future__ import annotations
 
 import pytest
@@ -23,12 +24,12 @@ class TestFormatDuration:
             (599, "9min 59s"),
             (600, "10min"),
             (1800, "30min"),
-            (1829, "30min"),   # seconds dropped above the 10-minute boundary
+            (1829, "30min"),  # seconds dropped above the 10-minute boundary
             (3599, "59min"),
             (3600, "1h"),
             (3660, "1h 1min"),
             (7200, "2h"),
-            (7230, "2h"),      # 30s rounds to 0min → suppressed
+            (7230, "2h"),  # 30s rounds to 0min → suppressed
             (7260, "2h 1min"),
         ],
     )
@@ -40,7 +41,6 @@ class TestFormattedStatus:
     """FormattedStatus is a frozen dataclass holding the composed result."""
 
     def test_all_fields_defaultable(self) -> None:
-        from datetime import datetime
 
         from custom_components.pv_excess_control.status_formatter import FormattedStatus
 
@@ -69,10 +69,15 @@ class TestFormattedStatus:
         from custom_components.pv_excess_control.status_formatter import FormattedStatus
 
         fs = FormattedStatus(
-            text="x", action="on", overrides_plan=False,
-            cooldown_seconds_remaining=None, switch_deferred=False,
-            headroom_watts=None, plan_action=None,
-            plan_window_start=None, plan_window_end=None,
+            text="x",
+            action="on",
+            overrides_plan=False,
+            cooldown_seconds_remaining=None,
+            switch_deferred=False,
+            headroom_watts=None,
+            plan_action=None,
+            plan_window_start=None,
+            plan_window_end=None,
         )
         with pytest.raises(Exception):
             fs.text = "mutated"  # type: ignore[misc]
@@ -176,15 +181,16 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=10),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
             now=self.NOW,
         )
         assert fs.text == (
-            "Excess available (2100W >= 1800W needed) "
-            "(switch deferred - 50s cooldown)"
+            "Excess available (2100W >= 1800W needed) (switch deferred - 50s cooldown)"
         )
         assert fs.switch_deferred is True
         assert fs.cooldown_seconds_remaining == 50
@@ -198,7 +204,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=43),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -216,7 +224,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=10),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -233,7 +243,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=120),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -247,7 +259,9 @@ class TestFormatStatusCooldown:
         decision = _make_decision(action=Action.ON)
         state = _make_state(is_on=False, last_state_change=None)
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -271,7 +285,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=5),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -288,7 +304,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=10),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -304,7 +322,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=10),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -323,7 +343,9 @@ class TestFormatStatusCooldown:
             last_state_change=self.NOW - timedelta(seconds=100),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=600,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -393,7 +415,9 @@ class TestFormatStatusBatterySoftLimit:
             should_limit=True, max_discharge_watts=1500.0
         )
         fs = format_status(
-            decision, state, config,
+            decision,
+            state,
+            config,
             switch_interval=300,
             battery_action=battery_action,
             plan=None,
@@ -406,7 +430,9 @@ class TestFormatStatusBatterySoftLimit:
     def test_big_consumer_no_limit_no_suffix(self) -> None:
         decision = _make_decision(reason="Staying on (2300W drawn)")
         fs = format_status(
-            decision, _make_state(), _make_config(is_big_consumer=True),
+            decision,
+            _make_state(),
+            _make_config(is_big_consumer=True),
             switch_interval=300,
             battery_action=BatteryDischargeAction(should_limit=False),
             plan=None,
@@ -420,7 +446,9 @@ class TestFormatStatusBatterySoftLimit:
             should_limit=True, max_discharge_watts=1500.0
         )
         fs = format_status(
-            decision, _make_state(), _make_config(is_big_consumer=False),
+            decision,
+            _make_state(),
+            _make_config(is_big_consumer=False),
             switch_interval=300,
             battery_action=battery_action,
             plan=None,
@@ -437,7 +465,9 @@ class TestFormatStatusBatterySoftLimit:
             should_limit=True, max_discharge_watts=0.0
         )
         fs = format_status(
-            decision, _make_state(), _make_config(is_big_consumer=True),
+            decision,
+            _make_state(),
+            _make_config(is_big_consumer=True),
             switch_interval=300,
             battery_action=battery_action,
             plan=None,
@@ -454,7 +484,9 @@ class TestFormatStatusBatterySoftLimit:
             should_limit=True, max_discharge_watts=None
         )
         fs = format_status(
-            decision, _make_state(), _make_config(is_big_consumer=True),
+            decision,
+            _make_state(),
+            _make_config(is_big_consumer=True),
             switch_interval=300,
             battery_action=battery_action,
             plan=None,
@@ -526,7 +558,9 @@ class TestFormatStatusPlanDeviation:
             overrides_plan=True,
         )
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
@@ -545,7 +579,9 @@ class TestFormatStatusPlanDeviation:
         plan = _make_plan([])
         decision = _make_decision(reason="Manual override active", overrides_plan=True)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
@@ -560,7 +596,9 @@ class TestFormatStatusPlanDeviation:
     def test_overrides_plan_with_no_plan_falls_back(self) -> None:
         decision = _make_decision(reason="Manual override active", overrides_plan=True)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -580,15 +618,15 @@ class TestFormatStatusPlanDeviation:
             overrides_plan=True,
         )
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
             now=self.NOW,
         )
-        assert fs.text == (
-            "Excess available (2100W >= 1800W needed) [overrides plan]"
-        )
+        assert fs.text == ("Excess available (2100W >= 1800W needed) [overrides plan]")
 
     def test_plan_entry_for_different_appliance_no_match(self) -> None:
         entry = _make_plan_entry(
@@ -603,7 +641,9 @@ class TestFormatStatusPlanDeviation:
             overrides_plan=True,
         )
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
@@ -614,7 +654,9 @@ class TestFormatStatusPlanDeviation:
     def test_overrides_plan_false_no_suffix(self) -> None:
         decision = _make_decision(reason="Excess available", overrides_plan=False)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -640,7 +682,9 @@ class TestFormatStatusPlanDeviation:
             overrides_plan=True,
         )
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
@@ -668,7 +712,9 @@ class TestFormatStatusPlanDeviation:
             overrides_plan=True,
         )
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=plan,
@@ -706,7 +752,9 @@ class TestFormatStatusCombined:
         )
         plan = _make_plan([entry])
         fs = format_status(
-            decision, state, config,
+            decision,
+            state,
+            config,
             switch_interval=60,
             battery_action=battery_action,
             plan=plan,
@@ -725,7 +773,9 @@ class TestFormatStatusCombined:
         long_reason = "x" * 300
         decision = _make_decision(reason=long_reason)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -739,7 +789,9 @@ class TestFormatStatusCombined:
         reason = "x" * 255
         decision = _make_decision(reason=reason)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -753,7 +805,9 @@ class TestFormatStatusCombined:
         reason = "x" * 254
         decision = _make_decision(reason=reason)
         fs = format_status(
-            decision, _make_state(), _make_config(),
+            decision,
+            _make_state(),
+            _make_config(),
             switch_interval=300,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -775,7 +829,9 @@ class TestFormatStatusCombined:
             last_state_change=self.NOW - timedelta(seconds=10),
         )
         fs = format_status(
-            decision, state, _make_config(),
+            decision,
+            state,
+            _make_config(),
             switch_interval=60,
             battery_action=_NO_BATTERY_LIMIT,
             plan=None,
@@ -814,7 +870,9 @@ class TestFormatStatusCombined:
         )
         plan = _make_plan([entry])
         fs = format_status(
-            decision, state, config,
+            decision,
+            state,
+            config,
             switch_interval=60,
             battery_action=battery_action,
             plan=plan,

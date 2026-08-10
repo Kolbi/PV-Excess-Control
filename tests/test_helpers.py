@@ -1,4 +1,5 @@
 """Tests for sensor combiner helpers (Task 18)."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock
@@ -14,6 +15,7 @@ from custom_components.pv_excess_control.helpers import (
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_hass(states: dict[str, str | None]) -> MagicMock:
     """Build a minimal mock hass whose states.get() returns stub state objects."""
@@ -34,6 +36,7 @@ def _make_hass(states: dict[str, str | None]) -> MagicMock:
 # ---------------------------------------------------------------------------
 # TestSumCombiner
 # ---------------------------------------------------------------------------
+
 
 class TestSumCombiner:
     def test_sum_all_values(self):
@@ -72,6 +75,7 @@ class TestSumCombiner:
 # ---------------------------------------------------------------------------
 # TestWeightedAverage
 # ---------------------------------------------------------------------------
+
 
 class TestWeightedAverage:
     def test_weighted_average_batteries(self):
@@ -125,13 +129,16 @@ class TestWeightedAverage:
 # TestReadMultipleSensors
 # ---------------------------------------------------------------------------
 
+
 class TestReadMultipleSensors:
     def test_reads_values(self):
         """Reads float values from mock HA states."""
-        hass = _make_hass({
-            "sensor.inv1_power": "1500.5",
-            "sensor.inv2_power": "2000.0",
-        })
+        hass = _make_hass(
+            {
+                "sensor.inv1_power": "1500.5",
+                "sensor.inv2_power": "2000.0",
+            }
+        )
         values, labels = read_multiple_sensors(
             hass,
             ["sensor.inv1_power", "sensor.inv2_power"],
@@ -141,10 +148,12 @@ class TestReadMultipleSensors:
 
     def test_unavailable_returns_none(self):
         """Unavailable sensors return None."""
-        hass = _make_hass({
-            "sensor.inv1_power": "unavailable",
-            "sensor.inv2_power": "1000.0",
-        })
+        hass = _make_hass(
+            {
+                "sensor.inv1_power": "unavailable",
+                "sensor.inv2_power": "1000.0",
+            }
+        )
         values, labels = read_multiple_sensors(
             hass,
             ["sensor.inv1_power", "sensor.inv2_power"],
@@ -185,11 +194,13 @@ class TestReadMultipleSensors:
 
     def test_integration_sum_of_read_sensors(self):
         """read_multiple_sensors output can be fed directly into sum_values."""
-        hass = _make_hass({
-            "sensor.inv1": "1000.0",
-            "sensor.inv2": "unavailable",
-            "sensor.inv3": "2000.0",
-        })
+        hass = _make_hass(
+            {
+                "sensor.inv1": "1000.0",
+                "sensor.inv2": "unavailable",
+                "sensor.inv3": "2000.0",
+            }
+        )
         values, labels = read_multiple_sensors(
             hass,
             ["sensor.inv1", "sensor.inv2", "sensor.inv3"],

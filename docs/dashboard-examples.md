@@ -12,11 +12,11 @@ This page provides ready-to-use YAML examples for a complete solar excess dashbo
 
 Install the following community cards via **HACS → Frontend** before using these examples.
 
-| Card | HACS Frontend Name | GitHub |
-|------|--------------------|--------|
-| Mushroom Cards | `mushroom` | [piitaya/lovelace-mushroom](https://github.com/piitaya/lovelace-mushroom) |
-| ApexCharts Card | `apexcharts-card` | [RomRider/apexcharts-card](https://github.com/RomRider/apexcharts-card) |
-| Mini Graph Card | `mini-graph-card` | [kalkih/mini-graph-card](https://github.com/kalkih/mini-graph-card) |
+| Card                 | HACS Frontend Name     | GitHub                                                                          |
+| -------------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| Mushroom Cards       | `mushroom`             | [piitaya/lovelace-mushroom](https://github.com/piitaya/lovelace-mushroom)       |
+| ApexCharts Card      | `apexcharts-card`      | [RomRider/apexcharts-card](https://github.com/RomRider/apexcharts-card)         |
+| Mini Graph Card      | `mini-graph-card`      | [kalkih/mini-graph-card](https://github.com/kalkih/mini-graph-card)             |
 | Power Flow Card Plus | `power-flow-card-plus` | [flixlix/power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
 
 After installing each card, **reload your browser** (Ctrl+Shift+R / Cmd+Shift+R) for the cards to be recognized.
@@ -89,16 +89,16 @@ Full animated power flow diagram. Replace the sensor entity IDs with your invert
 type: custom:power-flow-card-plus
 entities:
   grid:
-    entity: sensor.fronius_grid_export    # <- CHANGE
+    entity: sensor.fronius_grid_export # <- CHANGE
     secondary_info:
-      entity: sensor.fronius_grid_import  # <- CHANGE
+      entity: sensor.fronius_grid_import # <- CHANGE
   solar:
-    entity: sensor.fronius_pv_power       # <- CHANGE
+    entity: sensor.fronius_pv_power # <- CHANGE
   battery:
-    entity: sensor.fronius_battery_power  # <- CHANGE
-    state_of_charge: sensor.fronius_battery_soc  # <- CHANGE
+    entity: sensor.fronius_battery_power # <- CHANGE
+    state_of_charge: sensor.fronius_battery_soc # <- CHANGE
   home:
-    entity: sensor.fronius_load_power     # <- CHANGE
+    entity: sensor.fronius_load_power # <- CHANGE
   individual:
     - entity: sensor.pv_excess_control_ev_charger_power
       name: EV Charger
@@ -123,7 +123,7 @@ type: horizontal-stack
 cards:
   - type: custom:mushroom-template-card
     primary: Solar
-    secondary: "{{ states('sensor.fronius_pv_power') | int }} W"  # <- CHANGE
+    secondary: "{{ states('sensor.fronius_pv_power') | int }} W" # <- CHANGE
     icon: mdi:solar-power-variant
     icon_color: >-
       {% if states('sensor.fronius_pv_power') | int > 100 %}amber{% else %}disabled{% endif %}
@@ -136,14 +136,14 @@ cards:
       {% if v > 500 %}green{% elif v > 0 %}amber{% else %}red{% endif %}
   - type: custom:mushroom-template-card
     primary: Battery
-    secondary: "{{ states('sensor.fronius_battery_soc') | int }}%"  # <- CHANGE
+    secondary: "{{ states('sensor.fronius_battery_soc') | int }}%" # <- CHANGE
     icon: mdi:battery
     icon_color: >-
       {% set s = states('sensor.fronius_battery_soc') | int %}
       {% if s > 70 %}green{% elif s > 30 %}amber{% else %}red{% endif %}
   - type: custom:mushroom-template-card
     primary: Grid
-    secondary: "{{ states('sensor.fronius_grid_import') | int }} W"  # <- CHANGE
+    secondary: "{{ states('sensor.fronius_grid_import') | int }} W" # <- CHANGE
     icon: mdi:transmission-tower-import
     icon_color: >-
       {% if states('sensor.fronius_grid_import') | int > 100 %}red{% else %}disabled{% endif %}
@@ -401,7 +401,7 @@ span:
   start: day
 series:
   # Today's forecast — filled area
-  - entity: sensor.solcast_pv_forecast_forecast_today    # <- CHANGE
+  - entity: sensor.solcast_pv_forecast_forecast_today # <- CHANGE
     name: Today
     color: "var(--warning-color)"
     type: area
@@ -418,7 +418,7 @@ series:
         Math.round((item.pv_estimate || item.watts || 0) * 1000)
       ]);
   # Tomorrow's forecast — line only
-  - entity: sensor.solcast_pv_forecast_forecast_tomorrow  # <- CHANGE
+  - entity: sensor.solcast_pv_forecast_forecast_tomorrow # <- CHANGE
     name: Tomorrow
     color: "var(--info-color)"
     type: line
@@ -458,6 +458,7 @@ Overlays electricity prices (columns) with planned appliance activity (color-cod
 This chart uses the `plan_entries` attribute on `sensor.pv_excess_control_plan_confidence`, which includes `appliance_name`, `action`, `reason`, `window_start`, and `window_end` for each planned 15-minute slot.
 
 > **Ready-to-use YAML files:**
+>
 > - [`price-schedule-card-template.yaml`](dashboard/price-schedule-card-template.yaml) — generic template with `# <- CHANGE` markers
 > - [`price-schedule-card-example.yaml`](dashboard/price-schedule-card-example.yaml) — concrete example with 4 appliances and Octopus Energy pricing
 
@@ -754,16 +755,16 @@ cards:
   - type: custom:power-flow-card-plus
     entities:
       grid:
-        entity: sensor.fronius_grid_export         # <- CHANGE
+        entity: sensor.fronius_grid_export # <- CHANGE
         secondary_info:
-          entity: sensor.fronius_grid_import       # <- CHANGE
+          entity: sensor.fronius_grid_import # <- CHANGE
       solar:
-        entity: sensor.fronius_pv_power            # <- CHANGE
+        entity: sensor.fronius_pv_power # <- CHANGE
       battery:
-        entity: sensor.fronius_battery_power       # <- CHANGE
-        state_of_charge: sensor.fronius_battery_soc  # <- CHANGE
+        entity: sensor.fronius_battery_power # <- CHANGE
+        state_of_charge: sensor.fronius_battery_soc # <- CHANGE
       home:
-        entity: sensor.fronius_load_power          # <- CHANGE
+        entity: sensor.fronius_load_power # <- CHANGE
       individual:
         - entity: sensor.pv_excess_control_ev_charger_power
           name: EV Charger
@@ -872,7 +873,7 @@ cards:
     span:
       start: day
     series:
-      - entity: sensor.solcast_pv_forecast_forecast_today    # <- CHANGE
+      - entity: sensor.solcast_pv_forecast_forecast_today # <- CHANGE
         name: Today
         color: "var(--warning-color)"
         type: area
@@ -888,7 +889,7 @@ cards:
             new Date(item.period_start || item.datetime).getTime(),
             Math.round((item.pv_estimate || item.watts || 0) * 1000)
           ]);
-      - entity: sensor.solcast_pv_forecast_forecast_tomorrow  # <- CHANGE
+      - entity: sensor.solcast_pv_forecast_forecast_tomorrow # <- CHANGE
         name: Tomorrow
         color: "var(--info-color)"
         type: line

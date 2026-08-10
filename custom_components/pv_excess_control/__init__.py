@@ -1,4 +1,5 @@
 """The PV Excess Control integration."""
+
 from __future__ import annotations
 
 import logging
@@ -23,11 +24,16 @@ PLATFORMS: list[Platform] = [
 
 # Keys that represent runtime state (toggled via switches/selects).
 # Changes to ONLY these keys should NOT trigger a full integration reload.
-_RUNTIME_STATE_KEYS = frozenset({
-    "control_enabled", "force_charge", CONF_BATTERY_STRATEGY,
-    "disabled_appliances", "overridden_appliances",
-    "_grid_charge_engaged",
-})
+_RUNTIME_STATE_KEYS = frozenset(
+    {
+        "control_enabled",
+        "force_charge",
+        CONF_BATTERY_STRATEGY,
+        "disabled_appliances",
+        "overridden_appliances",
+        "_grid_charge_engaged",
+    }
+)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -45,17 +51,22 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     if old_snapshot is not None:
         new_data = dict(entry.data)
         # Compare data excluding runtime-state keys
-        old_structural = {k: v for k, v in old_snapshot.items() if k not in _RUNTIME_STATE_KEYS}
-        new_structural = {k: v for k, v in new_data.items() if k not in _RUNTIME_STATE_KEYS}
+        old_structural = {
+            k: v for k, v in old_snapshot.items() if k not in _RUNTIME_STATE_KEYS
+        }
+        new_structural = {
+            k: v for k, v in new_data.items() if k not in _RUNTIME_STATE_KEYS
+        }
 
         # Also check if subentry count changed (subentry add/remove)
         old_subentry_count = domain_data.get(subentry_count_key, 0)
         new_subentry_count = len(getattr(entry, "subentries", {}))
 
-        if old_structural == new_structural and old_subentry_count == new_subentry_count:
-            _LOGGER.debug(
-                "Config entry updated (runtime state only), skipping reload"
-            )
+        if (
+            old_structural == new_structural
+            and old_subentry_count == new_subentry_count
+        ):
+            _LOGGER.debug("Config entry updated (runtime state only), skipping reload")
             # Update the snapshot so future comparisons are correct
             domain_data[snapshot_key] = new_data
             domain_data[subentry_count_key] = new_subentry_count
@@ -75,7 +86,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Store a snapshot of config data so the update listener can detect
     # whether a change is structural (needs reload) or runtime-only.
     hass.data[DOMAIN][f"{entry.entry_id}_config_snapshot"] = dict(entry.data)
-    hass.data[DOMAIN][f"{entry.entry_id}_subentry_count"] = len(getattr(entry, "subentries", {}))
+    hass.data[DOMAIN][f"{entry.entry_id}_subentry_count"] = len(
+        getattr(entry, "subentries", {})
+    )
 
     # Listen for config/subentry changes and reload when they happen
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

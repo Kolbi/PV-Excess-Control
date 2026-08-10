@@ -5,6 +5,7 @@ version, we mock the subentry base class methods (async_show_form,
 async_create_entry, _get_reconfigure_subentry) and test the flow handler
 directly.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -38,7 +39,6 @@ from custom_components.pv_excess_control.const import (
     CONF_SCHEDULE_DEADLINE,
     CONF_SWITCH_INTERVAL,
     DEFAULT_SWITCH_INTERVAL,
-    DOMAIN,
 )
 from custom_components.pv_excess_control.config_flow import (
     ApplianceSubentryFlowHandler,
@@ -686,9 +686,7 @@ class TestFullFlow:
         flow = _make_subentry_flow()
 
         await flow.async_step_user(user_input=dict(VALID_BASIC_INPUT))
-        await flow.async_step_current(
-            user_input=dict(VALID_CURRENT_INPUT_DISABLED)
-        )
+        await flow.async_step_current(user_input=dict(VALID_CURRENT_INPUT_DISABLED))
         result = await flow.async_step_constraints(
             user_input=dict(VALID_CONSTRAINTS_INPUT)
         )
@@ -732,9 +730,15 @@ class TestReconfigure:
         # Mock HA reconfigure methods
         mock_entry = MagicMock()
         flow._get_entry = MagicMock(return_value=mock_entry)
+
         def mock_update_and_abort(entry, subentry, **kwargs):
-            return {"type": "abort", "reason": "reconfigure_successful",
-                    "title": kwargs.get("title", ""), "data": kwargs.get("data", {})}
+            return {
+                "type": "abort",
+                "reason": "reconfigure_successful",
+                "title": kwargs.get("title", ""),
+                "data": kwargs.get("data", {}),
+            }
+
         flow.async_update_and_abort = MagicMock(side_effect=mock_update_and_abort)
         return flow
 
@@ -987,16 +991,17 @@ class TestEdgeCases:
         flow = _make_subentry_flow()
 
         await flow.async_step_user(user_input=dict(VALID_BASIC_INPUT))
-        await flow.async_step_current(
-            user_input=dict(VALID_CURRENT_INPUT_DISABLED)
-        )
+        await flow.async_step_current(user_input=dict(VALID_CURRENT_INPUT_DISABLED))
         result = await flow.async_step_constraints(
             user_input=dict(VALID_CONSTRAINTS_INPUT)
         )
 
         data = result["data"]
         # Optional fields should not cause errors when absent
-        assert data.get(CONF_ACTUAL_POWER_ENTITY) is None or CONF_ACTUAL_POWER_ENTITY in data
+        assert (
+            data.get(CONF_ACTUAL_POWER_ENTITY) is None
+            or CONF_ACTUAL_POWER_ENTITY in data
+        )
         assert data.get(CONF_EV_SOC_ENTITY) is None or CONF_EV_SOC_ENTITY not in data
 
     @pytest.mark.asyncio
@@ -1073,9 +1078,7 @@ class TestEdgeCases:
                 CONF_PHASES: "1",
             }
         )
-        await flow.async_step_current(
-            user_input={CONF_DYNAMIC_CURRENT: False}
-        )
+        await flow.async_step_current(user_input={CONF_DYNAMIC_CURRENT: False})
         # First submit triggers big consumer warning (3000W >= threshold)
         result = await flow.async_step_constraints(
             user_input=dict(VALID_CONSTRAINTS_INPUT)
@@ -1101,7 +1104,9 @@ class TestCheapGridTargetCurrent:
     @pytest.mark.asyncio
     async def test_cheap_grid_target_current_accepted_for_dynamic_appliance(self):
         """A dynamic-current appliance subentry accepts cheap_grid_target_current."""
-        from custom_components.pv_excess_control.const import CONF_CHEAP_GRID_TARGET_CURRENT
+        from custom_components.pv_excess_control.const import (
+            CONF_CHEAP_GRID_TARGET_CURRENT,
+        )
 
         flow = _make_subentry_flow()
         flow._data = dict(VALID_BASIC_INPUT)
@@ -1120,7 +1125,9 @@ class TestCheapGridTargetCurrent:
     @pytest.mark.asyncio
     async def test_cheap_grid_target_current_rejected_for_non_dynamic_appliance(self):
         """Setting cheap_grid_target_current on a non-dynamic appliance fails validation."""
-        from custom_components.pv_excess_control.const import CONF_CHEAP_GRID_TARGET_CURRENT
+        from custom_components.pv_excess_control.const import (
+            CONF_CHEAP_GRID_TARGET_CURRENT,
+        )
 
         flow = _make_subentry_flow()
         flow._data = dict(VALID_BASIC_INPUT)

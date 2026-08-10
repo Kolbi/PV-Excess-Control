@@ -26,6 +26,7 @@
 2. Extract the archive and copy the `custom_components/pv_excess_control` folder into your Home Assistant `config/custom_components/` directory.
 
    Your directory structure should look like:
+
    ```
    config/
    └── custom_components/
@@ -60,9 +61,11 @@ See [Initial Setup](configuration/initial-setup.md) for a step-by-step walkthrou
 ## Updating
 
 ### Via HACS
+
 HACS will notify you when a new version is available. Click **Update** and restart Home Assistant.
 
 ### Manual
+
 Overwrite the `custom_components/pv_excess_control` folder with the new version, then restart Home Assistant.
 
 ---

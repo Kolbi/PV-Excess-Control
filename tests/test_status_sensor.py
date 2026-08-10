@@ -1,4 +1,5 @@
 """Integration tests for PvApplianceStatusSensor wiring to the formatter."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -16,17 +17,28 @@ from custom_components.pv_excess_control.sensor import PvApplianceStatusSensor
 
 def _make_config() -> ApplianceConfig:
     return ApplianceConfig(
-        id="sub123", name="Test Heater", entity_id="switch.heater",
-        priority=100, phases=1, nominal_power=2000.0, actual_power_entity=None,
-        dynamic_current=False, current_entity=None,
-        min_current=6.0, max_current=16.0,
-        ev_soc_entity=None, ev_connected_entity=None,
-        is_big_consumer=False, battery_max_discharge_override=None,
+        id="sub123",
+        name="Test Heater",
+        entity_id="switch.heater",
+        priority=100,
+        phases=1,
+        nominal_power=2000.0,
+        actual_power_entity=None,
+        dynamic_current=False,
+        current_entity=None,
+        min_current=6.0,
+        max_current=16.0,
+        ev_soc_entity=None,
+        ev_connected_entity=None,
+        is_big_consumer=False,
+        battery_max_discharge_override=None,
         on_only=False,
-        min_daily_runtime=None, max_daily_runtime=None,
+        min_daily_runtime=None,
+        max_daily_runtime=None,
         schedule_deadline=None,
         switch_interval=300,
-        allow_grid_supplement=False, max_grid_power=None,
+        allow_grid_supplement=False,
+        max_grid_power=None,
     )
 
 
@@ -202,7 +214,7 @@ class TestStatusSensorNativeValue:
             cooldown_n = attrs["cooldown_seconds_remaining"]
             assert f"{cooldown_n}s cooldown" in text or (
                 # _format_duration may render as "Xmin Ys" for >60s
-                f"cooldown" in text
+                "cooldown" in text
             )
 
     def test_fallback_when_state_missing(self) -> None:

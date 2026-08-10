@@ -29,6 +29,7 @@ After restarting, the log will show every optimizer cycle, including excess calc
 In Developer Tools → States, find `sensor.pv_excess_control_excess_power`. If it is 0 or negative when solar is producing, the sensor mapping is wrong.
 
 Common causes:
+
 - Wrong sign convention on grid sensor (see [Sensor Mapping](../configuration/sensor-mapping.md))
 - PV power sensor is unavailable — integration defaults to 0
 - Load power sensor included when it should not be (if using Import/Export, load power is implicit)
@@ -48,6 +49,7 @@ An appliance that was recently turned off will not turn on again until the switc
 **Problem**: Appliance turns on/off repeatedly every few minutes.
 
 **Fixes**:
+
 1. Increase **Switch Interval** to 300–600 s for the appliance
 2. The ON threshold (200 W) and OFF threshold (-50 W) provide built-in hysteresis to prevent flip-flopping
 3. If the appliance is still switching too frequently, check that the switch interval has not been set too low
@@ -105,6 +107,7 @@ ERROR (MainThread) [homeassistant.loader] ...
 ```
 
 Common causes:
+
 - Home Assistant version below 2025.8
 - Missing dependency in `manifest.json` (check version against the integration's requirements)
 - Syntax error in custom template sensors that the integration reads

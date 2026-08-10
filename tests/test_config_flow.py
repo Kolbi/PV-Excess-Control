@@ -4,10 +4,10 @@ Uses unittest.mock to simulate the Home Assistant config flow machinery.
 Tests verify that each step collects the right data, validates inputs,
 shows conditional fields, and that the full flow creates a correct entry.
 """
+
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import voluptuous as vol
@@ -38,9 +38,6 @@ from custom_components.pv_excess_control.const import (
     CONF_PRICE_SENSOR,
     CONF_PV_POWER,
     CONF_TARIFF_PROVIDER,
-    DEFAULT_CONTROLLER_INTERVAL,
-    DEFAULT_GRID_VOLTAGE,
-    DEFAULT_PLANNER_INTERVAL,
     DOMAIN,
     BatteryStrategy,
     ForecastProvider,
@@ -479,7 +476,10 @@ class TestStepForecast:
 
         assert result["step_id"] == "settings"
         assert flow.data[CONF_FORECAST_PROVIDER] == ForecastProvider.SOLCAST
-        assert flow.data[CONF_FORECAST_SENSOR] == "sensor.solcast_pv_forecast_forecast_remaining_today"
+        assert (
+            flow.data[CONF_FORECAST_SENSOR]
+            == "sensor.solcast_pv_forecast_forecast_remaining_today"
+        )
 
     @pytest.mark.asyncio
     async def test_step_forecast_generic_requires_sensor(self):
@@ -493,9 +493,7 @@ class TestStepForecast:
 
         assert result["type"] == "form"
         assert result["step_id"] == "forecast"
-        assert (
-            result["errors"][CONF_FORECAST_SENSOR] == "missing_forecast_sensor"
-        )
+        assert result["errors"][CONF_FORECAST_SENSOR] == "missing_forecast_sensor"
 
     @pytest.mark.asyncio
     async def test_step_forecast_generic_with_sensor(self):
@@ -574,7 +572,9 @@ class TestStepBattery:
         )
 
         assert result["step_id"] == "settings"
-        assert flow.data[CONF_BATTERY_MAX_DISCHARGE_ENTITY] == "number.battery_discharge"
+        assert (
+            flow.data[CONF_BATTERY_MAX_DISCHARGE_ENTITY] == "number.battery_discharge"
+        )
         assert flow.data[CONF_BATTERY_MAX_DISCHARGE_DEFAULT] == 5000
 
     @pytest.mark.asyncio
@@ -975,8 +975,7 @@ class TestSchemaHelpers:
         """Standard schema does not include battery fields."""
         schema = _sensor_schema(is_hybrid=False)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_PV_POWER in key_names
         assert CONF_GRID_EXPORT in key_names
@@ -990,8 +989,7 @@ class TestSchemaHelpers:
         """Hybrid schema includes battery fields."""
         schema = _sensor_schema(is_hybrid=True)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_PV_POWER in key_names
         assert CONF_BATTERY_SOC in key_names
@@ -1002,8 +1000,7 @@ class TestSchemaHelpers:
         """None provider schema has tariff_provider, thresholds, and feed_in_tariff."""
         schema = _energy_schema(TariffProvider.NONE)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_TARIFF_PROVIDER in key_names
         assert CONF_FEED_IN_TARIFF in key_names
@@ -1017,8 +1014,7 @@ class TestSchemaHelpers:
         """Generic provider schema includes price sensor and thresholds."""
         schema = _energy_schema(TariffProvider.GENERIC)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_TARIFF_PROVIDER in key_names
         assert CONF_PRICE_SENSOR in key_names
@@ -1030,8 +1026,7 @@ class TestSchemaHelpers:
         """Tibber provider schema has thresholds and price sensor."""
         schema = _energy_schema(TariffProvider.TIBBER)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_TARIFF_PROVIDER in key_names
         assert CONF_PRICE_SENSOR in key_names
@@ -1041,8 +1036,7 @@ class TestSchemaHelpers:
         """None forecast schema has provider but no sensor."""
         schema = _forecast_schema(ForecastProvider.NONE)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_FORECAST_PROVIDER in key_names
         assert CONF_FORECAST_SENSOR not in key_names
@@ -1051,8 +1045,7 @@ class TestSchemaHelpers:
         """Generic forecast schema has provider and sensor."""
         schema = _forecast_schema(ForecastProvider.GENERIC)
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in schema.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in schema.schema
         ]
         assert CONF_FORECAST_PROVIDER in key_names
         assert CONF_FORECAST_SENSOR in key_names
@@ -1060,8 +1053,7 @@ class TestSchemaHelpers:
     def test_battery_schema_keys(self):
         """Battery schema has all expected keys."""
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in BATTERY_SCHEMA.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in BATTERY_SCHEMA.schema
         ]
         assert CONF_BATTERY_STRATEGY in key_names
         assert CONF_BATTERY_TARGET_SOC in key_names
@@ -1073,8 +1065,7 @@ class TestSchemaHelpers:
     def test_settings_schema_keys(self):
         """Settings schema has all expected keys."""
         key_names = [
-            k.schema if isinstance(k, vol.Marker) else k
-            for k in SETTINGS_SCHEMA.schema
+            k.schema if isinstance(k, vol.Marker) else k for k in SETTINGS_SCHEMA.schema
         ]
         assert CONF_EXPORT_LIMIT in key_names
         assert CONF_CONTROLLER_INTERVAL in key_names
@@ -1202,7 +1193,10 @@ from custom_components.pv_excess_control.const import (
 
 
 def test_auto_battery_grid_charge_requires_enable_entity_and_power_w():
-    from custom_components.pv_excess_control.config_flow import _validate_battery_section
+    from custom_components.pv_excess_control.config_flow import (
+        _validate_battery_section,
+    )
+
     bad = {
         CONF_AUTO_BATTERY_GRID_CHARGE: True,
         # missing CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY
@@ -1213,7 +1207,10 @@ def test_auto_battery_grid_charge_requires_enable_entity_and_power_w():
 
 
 def test_inverter_force_charge_engage_value_required_when_entity_set():
-    from custom_components.pv_excess_control.config_flow import _validate_battery_section
+    from custom_components.pv_excess_control.config_flow import (
+        _validate_battery_section,
+    )
+
     bad = {
         CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY: "input_select.cmd",
         # missing engage/disengage values
@@ -1223,7 +1220,10 @@ def test_inverter_force_charge_engage_value_required_when_entity_set():
 
 
 def test_inverter_force_charge_mode_values_required_when_mode_entity_set():
-    from custom_components.pv_excess_control.config_flow import _validate_battery_section
+    from custom_components.pv_excess_control.config_flow import (
+        _validate_battery_section,
+    )
+
     bad = {
         CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY: "input_select.cmd",
         CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE: "Forced charge",
@@ -1236,7 +1236,10 @@ def test_inverter_force_charge_mode_values_required_when_mode_entity_set():
 
 
 def test_validate_battery_section_passes_for_complete_three_step_config():
-    from custom_components.pv_excess_control.config_flow import _validate_battery_section
+    from custom_components.pv_excess_control.config_flow import (
+        _validate_battery_section,
+    )
+
     good = {
         CONF_AUTO_BATTERY_GRID_CHARGE: True,
         CONF_BATTERY_GRID_CHARGE_POWER_W: 5000.0,

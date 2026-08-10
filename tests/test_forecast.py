@@ -1,7 +1,8 @@
 """Tests for the forecast provider module."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 
 import pytest
 
@@ -17,6 +18,7 @@ from custom_components.pv_excess_control.models import ForecastData, HourlyForec
 # ---------------------------------------------------------------------------
 # TestGenericForecastProvider
 # ---------------------------------------------------------------------------
+
 
 class TestGenericForecastProvider:
     def test_reads_remaining_kwh(self):
@@ -78,18 +80,22 @@ class TestGenericForecastProvider:
 # TestSolcastProvider
 # ---------------------------------------------------------------------------
 
+
 class TestSolcastProvider:
     def test_reads_forecast_with_breakdown(self):
         """SolcastProvider reads remaining kWh and hourly breakdown."""
         provider = SolcastProvider("sensor.solcast_remaining")
-        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.solcast_remaining": {
                 "state": "15.2",
                 "attributes": {
                     "forecasts": [
                         {"period_start": now.isoformat(), "pv_estimate": 2.5},
-                        {"period_start": now.replace(minute=30).isoformat(), "pv_estimate": 3.0},
+                        {
+                            "period_start": now.replace(minute=30).isoformat(),
+                            "pv_estimate": 3.0,
+                        },
                     ],
                     "forecast_tomorrow": 18.5,
                 },
@@ -103,14 +109,17 @@ class TestSolcastProvider:
     def test_two_half_hour_slots_combine_into_one_hour(self):
         """Two 30-min Solcast slots for the same hour merge into one HourlyForecast."""
         provider = SolcastProvider("sensor.solcast_remaining")
-        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=UTC)
         states = {
             "sensor.solcast_remaining": {
                 "state": "10.0",
                 "attributes": {
                     "forecasts": [
                         {"period_start": now.isoformat(), "pv_estimate": 2.0},
-                        {"period_start": now.replace(minute=30).isoformat(), "pv_estimate": 2.0},
+                        {
+                            "period_start": now.replace(minute=30).isoformat(),
+                            "pv_estimate": 2.0,
+                        },
                     ],
                     "forecast_tomorrow": None,
                 },
@@ -138,7 +147,9 @@ class TestSolcastProvider:
 
     def test_unavailable_returns_zero(self):
         provider = SolcastProvider("sensor.solcast_remaining")
-        states = {"sensor.solcast_remaining": {"state": "unavailable", "attributes": {}}}
+        states = {
+            "sensor.solcast_remaining": {"state": "unavailable", "attributes": {}}
+        }
         data = provider.get_forecast(states)
         assert data.remaining_today_kwh == 0.0
         assert data.hourly_breakdown == []
@@ -162,14 +173,17 @@ class TestSolcastProvider:
     def test_hourly_forecast_fields(self):
         """HourlyForecast contains start, end, expected_kwh, expected_watts."""
         provider = SolcastProvider("sensor.solcast_remaining")
-        now = datetime(2026, 3, 22, 14, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 14, 0, 0, tzinfo=UTC)
         states = {
             "sensor.solcast_remaining": {
                 "state": "6.0",
                 "attributes": {
                     "forecasts": [
                         {"period_start": now.isoformat(), "pv_estimate": 3.0},
-                        {"period_start": now.replace(minute=30).isoformat(), "pv_estimate": 3.0},
+                        {
+                            "period_start": now.replace(minute=30).isoformat(),
+                            "pv_estimate": 3.0,
+                        },
                     ],
                 },
             },
@@ -194,6 +208,7 @@ class TestSolcastProvider:
         _parse_iso only accepted strings, causing TypeError on datetime objects.
         """
         from datetime import timedelta
+
         provider = SolcastProvider("sensor.solcast")
         tz = timezone(timedelta(hours=2))
         now = datetime(2026, 4, 5, 10, 0, tzinfo=tz)
@@ -205,7 +220,10 @@ class TestSolcastProvider:
                         {"period_start": now, "pv_estimate": 2.0},
                         {"period_start": now.replace(minute=30), "pv_estimate": 3.0},
                         {"period_start": now.replace(hour=11), "pv_estimate": 4.0},
-                        {"period_start": now.replace(hour=11, minute=30), "pv_estimate": 5.0},
+                        {
+                            "period_start": now.replace(hour=11, minute=30),
+                            "pv_estimate": 5.0,
+                        },
                     ],
                 },
             },
@@ -214,21 +232,30 @@ class TestSolcastProvider:
         assert data.remaining_today_kwh == 30.0
         assert len(data.hourly_breakdown) == 2
         # Hour 10: avg 2.5kW, each 30-min slot contributes kW*0.5
-        assert pytest.approx(data.hourly_breakdown[0].expected_kwh) == 2.0 * 0.5 + 3.0 * 0.5
+        assert (
+            pytest.approx(data.hourly_breakdown[0].expected_kwh)
+            == 2.0 * 0.5 + 3.0 * 0.5
+        )
         # Hour 11: avg 4.5kW
-        assert pytest.approx(data.hourly_breakdown[1].expected_kwh) == 4.0 * 0.5 + 5.0 * 0.5
+        assert (
+            pytest.approx(data.hourly_breakdown[1].expected_kwh)
+            == 4.0 * 0.5 + 5.0 * 0.5
+        )
 
     def test_detailedForecast_attribute_used(self):
         """Solcast HACS integration uses 'detailedForecast' not 'forecasts'."""
         provider = SolcastProvider("sensor.solcast")
-        now = datetime(2026, 4, 5, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 4, 5, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.solcast": {
                 "state": "20.0",
                 "attributes": {
                     "detailedForecast": [
                         {"period_start": now.isoformat(), "pv_estimate": 3.0},
-                        {"period_start": now.replace(minute=30).isoformat(), "pv_estimate": 3.0},
+                        {
+                            "period_start": now.replace(minute=30).isoformat(),
+                            "pv_estimate": 3.0,
+                        },
                     ],
                 },
             },
@@ -240,7 +267,7 @@ class TestSolcastProvider:
     def test_detailedHourly_attribute_fallback(self):
         """Falls back to detailedHourly if neither forecasts nor detailedForecast exist."""
         provider = SolcastProvider("sensor.solcast")
-        now = datetime(2026, 4, 5, 14, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 4, 5, 14, 0, 0, tzinfo=UTC)
         states = {
             "sensor.solcast": {
                 "state": "10.0",
@@ -259,11 +286,12 @@ class TestSolcastProvider:
 # TestForecastSolarProvider
 # ---------------------------------------------------------------------------
 
+
 class TestForecastSolarProvider:
     def test_reads_watts_dict(self):
         """ForecastSolarProvider reads watts breakdown from attributes."""
         provider = ForecastSolarProvider("sensor.forecast_solar")
-        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
         hour_str = now.replace(minute=0, second=0, microsecond=0).isoformat()
         states = {
             "sensor.forecast_solar": {
@@ -282,7 +310,7 @@ class TestForecastSolarProvider:
     def test_watts_dict_converts_to_hourly_forecast(self):
         """Each watts entry becomes one HourlyForecast with correct kWh."""
         provider = ForecastSolarProvider("sensor.forecast_solar")
-        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=UTC)
         states = {
             "sensor.forecast_solar": {
                 "state": "8.0",
@@ -302,7 +330,7 @@ class TestForecastSolarProvider:
     def test_multiple_hours(self):
         """Multiple watts entries produce multiple HourlyForecast entries."""
         provider = ForecastSolarProvider("sensor.forecast_solar")
-        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 10, 0, 0, tzinfo=UTC)
         hour2 = now.replace(hour=11)
         states = {
             "sensor.forecast_solar": {
@@ -344,7 +372,7 @@ class TestForecastSolarProvider:
     def test_tomorrow_total_kwh_is_none(self):
         """ForecastSolarProvider does not provide tomorrow total."""
         provider = ForecastSolarProvider("sensor.forecast_solar")
-        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
         states = {
             "sensor.forecast_solar": {
                 "state": "4.0",
@@ -357,7 +385,7 @@ class TestForecastSolarProvider:
     def test_hourly_forecast_start_end(self):
         """HourlyForecast start and end span exactly one hour."""
         provider = ForecastSolarProvider("sensor.forecast_solar")
-        now = datetime(2026, 3, 22, 9, 0, 0, tzinfo=timezone.utc)
+        now = datetime(2026, 3, 22, 9, 0, 0, tzinfo=UTC)
         states = {
             "sensor.forecast_solar": {
                 "state": "3.0",
@@ -377,6 +405,7 @@ class TestForecastSolarProvider:
 # ---------------------------------------------------------------------------
 # TestCreateForecastProvider
 # ---------------------------------------------------------------------------
+
 
 class TestCreateForecastProvider:
     def test_create_generic(self):

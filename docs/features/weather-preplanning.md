@@ -46,6 +46,7 @@ To verify pre-planning is active, check the plan entries in the integration's di
 ## Appliance Priority in Pre-Planning
 
 Pre-planning respects appliance priority. If total cheap hours are limited:
+
 1. Highest-priority appliances with deadlines are scheduled first
 2. Lower-priority appliances fill remaining cheap hours
 3. Appliances without deadlines are not included in pre-planning
