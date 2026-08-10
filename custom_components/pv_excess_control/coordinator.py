@@ -18,7 +18,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant7
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -442,7 +442,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._planner_interval,
         )
 
-     async def async_restore_daily_state(self) -> None:
+    async def async_restore_daily_state(self) -> None:
          """Restore today's runtime, energy and activation counters."""
          data = await self._daily_state_store.async_load()
          if not data or data.get("date") != dt_util.now().date().isoformat():
@@ -474,7 +474,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
          self._activations_today = activations
          _LOGGER.debug("Restored daily counters for %d appliances", len(restored))
 
-     def _daily_state_data(self) -> dict[str, Any]:
+    def _daily_state_data(self) -> dict[str, Any]:
          """Build serialisable storage data for today's per-appliance counters."""
          appliances: dict[str, dict[str, float | int]] = {}
          all_ids = set(self.appliance_states) | set(self._activations_today)
@@ -501,13 +501,13 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
              "appliances": appliances,
          }
 
-     def _schedule_daily_state_save(self) -> None:
+    def _schedule_daily_state_save(self) -> None:
          """Persist counters with a short debounce to avoid excessive disk writes."""
          self._daily_state_store.async_delay_save(
              self._daily_state_data, _DAILY_STATE_SAVE_DELAY
          )
 
-     async def async_save_daily_state(self) -> None:
+    async def async_save_daily_state(self) -> None:
          """Immediately persist the current daily counters."""
          await self._daily_state_store.async_save(self._daily_state_data())
 
