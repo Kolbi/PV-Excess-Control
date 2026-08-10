@@ -1586,22 +1586,25 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             #     (they may need to respond promptly to dependent transitions —
             #     see 2026-04-09-helper-only-hardening-design.md Bug C).
             is_needed_by_others = decision.appliance_id in self._needed_by_others
-            if not decision.bypasses_cooldown and not is_needed_by_others:
-                if decision.action != Action.SET_CURRENT or not is_on:
-                    last_change = self._last_state_change.get(decision.appliance_id)
-                    if last_change is not None:
-                        elapsed = (datetime.now() - last_change).total_seconds()
-                        if elapsed < appliance_config.switch_interval:
-                            _LOGGER.debug(
-                                "Skipping %s for %s (%s): switch interval not elapsed "
-                                "(%.0fs of %ds)",
-                                decision.action,
-                                appliance_config.name,
-                                entity_id,
-                                elapsed,
-                                appliance_config.switch_interval,
-                            )
-                            continue  # Too soon to change
+            if (
+                not decision.bypasses_cooldown
+                and not is_needed_by_others
+                and (decision.action != Action.SET_CURRENT or not is_on)
+            ):
+                last_change = self._last_state_change.get(decision.appliance_id)
+                if last_change is not None:
+                    elapsed = (datetime.now() - last_change).total_seconds()
+                    if elapsed < appliance_config.switch_interval:
+                        _LOGGER.debug(
+                            "Skipping %s for %s (%s): switch interval not elapsed "
+                            "(%.0fs of %ds)",
+                            decision.action,
+                            appliance_config.name,
+                            entity_id,
+                            elapsed,
+                            appliance_config.switch_interval,
+                        )
+                        continue  # Too soon to change
 
             try:
                 if decision.action == Action.ON:
