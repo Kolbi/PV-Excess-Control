@@ -1188,6 +1188,7 @@ class TestDataAccumulation:
 # Tests for _validate_battery_section
 # ---------------------------------------------------------------------------
 
+
 def test_auto_battery_grid_charge_requires_enable_entity_and_power_w():
     from custom_components.pv_excess_control.config_flow import (
         _validate_battery_section,
