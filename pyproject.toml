@@ -12,3 +12,6 @@ select = [
     "SIM",
     "G",
 ]
+
+[codespell]
+skip = README.de.md
