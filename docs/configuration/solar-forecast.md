@@ -6,12 +6,12 @@ A solar forecast allows the 24-hour planner to schedule appliances intelligently
 
 ## Supported Providers
 
-| Provider | HA Integration |
-|----------|---------------|
-| **None** | No forecast; planner uses fixed averages |
-| **Solcast** | [ha-solcast-solar](https://github.com/BJReplay/ha-solcast-solar) |
+| Provider           | HA Integration                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| **None**           | No forecast; planner uses fixed averages                                              |
+| **Solcast**        | [ha-solcast-solar](https://github.com/BJReplay/ha-solcast-solar)                      |
 | **Forecast.Solar** | [Built-in HA integration](https://www.home-assistant.io/integrations/forecast_solar/) |
-| **Generic sensor** | Any sensor exposing remaining-today kWh |
+| **Generic sensor** | Any sensor exposing remaining-today kWh                                               |
 
 ---
 
@@ -33,9 +33,9 @@ When forecast data is available, the 24-hour planner:
 2. Configure your roof segments (azimuth, tilt, peak power)
 3. In PV Excess Control, select **Solcast** and set:
 
-| Field | Example Value |
-|-------|--------------|
-| Forecast sensor | `sensor.solcast_pv_forecast_forecast_remaining_today` |
+| Field                    | Example Value                                             |
+| ------------------------ | --------------------------------------------------------- |
+| Forecast sensor          | `sensor.solcast_pv_forecast_forecast_remaining_today`     |
 | Tomorrow forecast sensor | `sensor.solcast_pv_forecast_forecast_tomorrow` (optional) |
 
 The integration automatically extracts hourly breakdown data from Solcast's attributes.
@@ -50,9 +50,9 @@ The **Tomorrow Forecast Sensor** enables weather pre-planning: if tomorrow's for
 2. Enter your roof parameters
 3. In PV Excess Control, select **Forecast.Solar** and set:
 
-| Field | Example Value |
-|-------|--------------|
-| Forecast sensor | `sensor.energy_production_today_remaining` |
+| Field                    | Example Value                                                         |
+| ------------------------ | --------------------------------------------------------------------- |
+| Forecast sensor          | `sensor.energy_production_today_remaining`                            |
 | Tomorrow forecast sensor | (optional — Forecast.Solar provides this via its own tomorrow sensor) |
 
 ---

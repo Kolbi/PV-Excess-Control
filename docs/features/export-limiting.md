@@ -42,6 +42,7 @@ The optimizer's Phase 2 (ALLOCATE) adds curtailed power to the excess pool, maki
 System: 10 kW PV, 4 kW export limit, hot water heater (3 kW), pool pump (1 kW)
 
 At 13:00 with 9 kW production and 2 kW load:
+
 - Excess without export limit: 7 kW
 - Export limit allows: 4 kW → curtailed: 3 kW
 - Effective excess for appliances: 7 kW (3 kW curtailed + 4 kW would-be export available)

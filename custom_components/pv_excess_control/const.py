@@ -1,4 +1,5 @@
 """Constants for the PV Excess Control integration."""
+
 from enum import StrEnum
 
 DOMAIN = "pv_excess_control"
@@ -27,12 +28,14 @@ MAX_PHASES = 3
 
 class InverterType(StrEnum):
     """Inverter type."""
+
     STANDARD = "standard"
     HYBRID = "hybrid"
 
 
 class BatteryStrategy(StrEnum):
     """Battery charging strategy."""
+
     BATTERY_FIRST = "battery_first"
     APPLIANCE_FIRST = "appliance_first"
     BALANCED = "balanced"
@@ -40,6 +43,7 @@ class BatteryStrategy(StrEnum):
 
 class PlanInfluence(StrEnum):
     """How much the planner influences optimizer decisions."""
+
     NONE = "none"
     LIGHT = "light"
     PLAN_FOLLOWS = "plan_follows"
@@ -47,6 +51,7 @@ class PlanInfluence(StrEnum):
 
 class Action(StrEnum):
     """Control action for an appliance."""
+
     ON = "on"
     OFF = "off"
     SET_CURRENT = "set_current"
@@ -55,6 +60,7 @@ class Action(StrEnum):
 
 class PlanReason(StrEnum):
     """Reason for a planned action."""
+
     EXCESS_AVAILABLE = "excess_available"
     CHEAP_TARIFF = "cheap_tariff"
     MIN_RUNTIME = "min_runtime"
@@ -70,6 +76,7 @@ class PlanReason(StrEnum):
 
 class TariffProvider(StrEnum):
     """Supported tariff providers."""
+
     NONE = "none"
     GENERIC = "generic"
     TIBBER = "tibber"
@@ -80,6 +87,7 @@ class TariffProvider(StrEnum):
 
 class ForecastProvider(StrEnum):
     """Supported forecast providers."""
+
     NONE = "none"
     SOLCAST = "solcast"
     FORECAST_SOLAR = "forecast_solar"
@@ -88,6 +96,7 @@ class ForecastProvider(StrEnum):
 
 class NotificationEvent(StrEnum):
     """Notification event types."""
+
     APPLIANCE_ON = "appliance_on"
     APPLIANCE_OFF = "appliance_off"
     OVERRIDE_ACTIVATED = "override_activated"
@@ -145,11 +154,17 @@ CONF_BATTERY_GRID_CHARGE_POWER_W = "battery_grid_charge_power_w"
 CONF_GRID_CHARGE_ENGAGE_MIN_DURATION_MINUTES = "grid_charge_engage_min_duration_minutes"
 
 CONF_INVERTER_FORCE_CHARGE_ENABLE_ENTITY = "inverter_force_charge_enable_entity"
-CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE = "inverter_force_charge_enable_engage_value"
-CONF_INVERTER_FORCE_CHARGE_ENABLE_DISENGAGE_VALUE = "inverter_force_charge_enable_disengage_value"
+CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE = (
+    "inverter_force_charge_enable_engage_value"
+)
+CONF_INVERTER_FORCE_CHARGE_ENABLE_DISENGAGE_VALUE = (
+    "inverter_force_charge_enable_disengage_value"
+)
 CONF_INVERTER_FORCE_CHARGE_MODE_ENTITY = "inverter_force_charge_mode_entity"
 CONF_INVERTER_FORCE_CHARGE_MODE_ENGAGE_VALUE = "inverter_force_charge_mode_engage_value"
-CONF_INVERTER_FORCE_CHARGE_MODE_DISENGAGE_VALUE = "inverter_force_charge_mode_disengage_value"
+CONF_INVERTER_FORCE_CHARGE_MODE_DISENGAGE_VALUE = (
+    "inverter_force_charge_mode_disengage_value"
+)
 CONF_INVERTER_FORCE_CHARGE_POWER_ENTITY = "inverter_force_charge_power_entity"
 
 DEFAULT_GRID_CHARGE_ENGAGE_MIN_DURATION_MINUTES = 5

@@ -1,4 +1,5 @@
 """Notification manager for PV Excess Control."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -22,7 +23,11 @@ class NotificationManager:
         notification_service: str | None = None,
     ) -> None:
         self.hass = hass
-        self.settings = notification_settings if notification_settings is not None else DEFAULT_NOTIFICATION_SETTINGS.copy()
+        self.settings = (
+            notification_settings
+            if notification_settings is not None
+            else DEFAULT_NOTIFICATION_SETTINGS.copy()
+        )
         self.service = notification_service  # e.g., "notify.mobile_app_phone"
         self._last_sent: dict[str, datetime] = {}
         self._rate_limit_seconds = 300  # 5 minutes
@@ -44,7 +49,10 @@ class NotificationManager:
 
         if self.service:
             if "." not in self.service:
-                _LOGGER.warning("Invalid notification service format: %s (expected domain.service)", self.service)
+                _LOGGER.warning(
+                    "Invalid notification service format: %s (expected domain.service)",
+                    self.service,
+                )
                 return False
             domain, service_name = self.service.split(".", 1)
             await self.hass.services.async_call(

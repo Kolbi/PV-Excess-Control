@@ -1,7 +1,8 @@
 """Comprehensive tests for PV Excess Control data models."""
+
 from __future__ import annotations
 
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timedelta, UTC
 
 import pytest
 
@@ -28,8 +29,9 @@ from custom_components.pv_excess_control.models import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _utcnow() -> datetime:
-    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
 
 
 def _make_appliance_config(**kwargs) -> ApplianceConfig:
@@ -65,6 +67,7 @@ def _make_appliance_config(**kwargs) -> ApplianceConfig:
 # ---------------------------------------------------------------------------
 # TestPowerState
 # ---------------------------------------------------------------------------
+
 
 class TestPowerState:
     def test_create_with_battery(self):
@@ -143,6 +146,7 @@ class TestPowerState:
 # TestApplianceConfig
 # ---------------------------------------------------------------------------
 
+
 class TestApplianceConfig:
     def test_create_simple_switch(self):
         cfg = _make_appliance_config()
@@ -172,7 +176,7 @@ class TestApplianceConfig:
 
     def test_create_ev_charger_with_all_fields(self):
         deadline = time(7, 0)
-        until = datetime(2026, 3, 23, 7, 0, 0, tzinfo=timezone.utc)
+        until = datetime(2026, 3, 23, 7, 0, 0, tzinfo=UTC)
         cfg = ApplianceConfig(
             id="ev_charger_1",
             name="EV Charger",
@@ -241,10 +245,11 @@ class TestApplianceConfig:
 # TestTariffWindow
 # ---------------------------------------------------------------------------
 
+
 class TestTariffWindow:
     def test_create_basic_window(self):
-        start = datetime(2026, 3, 22, 10, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 3, 22, 11, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 3, 22, 10, 0, tzinfo=UTC)
+        end = datetime(2026, 3, 22, 11, 0, tzinfo=UTC)
         w = TariffWindow(start=start, end=end, price=0.08, is_cheap=True)
         assert w.start == start
         assert w.end == end
@@ -252,15 +257,15 @@ class TestTariffWindow:
         assert w.is_cheap is True
 
     def test_create_expensive_window(self):
-        start = datetime(2026, 3, 22, 18, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 3, 22, 20, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 3, 22, 18, 0, tzinfo=UTC)
+        end = datetime(2026, 3, 22, 20, 0, tzinfo=UTC)
         w = TariffWindow(start=start, end=end, price=0.35, is_cheap=False)
         assert w.is_cheap is False
         assert w.price == 0.35
 
     def test_is_frozen(self):
-        start = datetime(2026, 3, 22, 10, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 3, 22, 11, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 3, 22, 10, 0, tzinfo=UTC)
+        end = datetime(2026, 3, 22, 11, 0, tzinfo=UTC)
         w = TariffWindow(start=start, end=end, price=0.10, is_cheap=False)
         with pytest.raises(Exception):
             w.price = 0.99  # type: ignore[misc]
@@ -269,6 +274,7 @@ class TestTariffWindow:
 # ---------------------------------------------------------------------------
 # TestTariffInfo
 # ---------------------------------------------------------------------------
+
 
 class TestTariffInfo:
     def test_create_and_net_savings(self):
@@ -295,8 +301,8 @@ class TestTariffInfo:
         assert pytest.approx(info.net_savings_per_kwh) == -0.05
 
     def test_with_windows(self):
-        start = datetime(2026, 3, 22, 10, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 3, 22, 11, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 3, 22, 10, 0, tzinfo=UTC)
+        end = datetime(2026, 3, 22, 11, 0, tzinfo=UTC)
         window = TariffWindow(start=start, end=end, price=0.08, is_cheap=True)
         info = TariffInfo(
             current_price=0.25,
@@ -312,6 +318,7 @@ class TestTariffInfo:
 # ---------------------------------------------------------------------------
 # TestControlDecision
 # ---------------------------------------------------------------------------
+
 
 class TestControlDecision:
     def test_create_on_decision(self):
@@ -376,11 +383,12 @@ class TestControlDecision:
 # TestPlan
 # ---------------------------------------------------------------------------
 
+
 class TestPlan:
     def _make_battery_target(self) -> BatteryTarget:
         return BatteryTarget(
             target_soc=90.0,
-            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc),
+            target_time=datetime(2026, 3, 23, 7, 0, tzinfo=UTC),
             strategy=BatteryStrategy.BALANCED,
         )
 
@@ -403,8 +411,8 @@ class TestPlan:
     def test_plan_with_entries(self):
         now = _utcnow()
         bt = self._make_battery_target()
-        start = datetime(2026, 3, 22, 13, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 3, 22, 14, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 3, 22, 13, 0, tzinfo=UTC)
+        end = datetime(2026, 3, 22, 14, 0, tzinfo=UTC)
         window = TariffWindow(start=start, end=end, price=0.08, is_cheap=True)
         entry = PlanEntry(
             appliance_id="appliance_1",
@@ -428,8 +436,20 @@ class TestPlan:
     def test_plan_confidence_range(self):
         now = _utcnow()
         bt = self._make_battery_target()
-        plan_low = Plan(created_at=now, horizon=timedelta(hours=1), entries=[], battery_target=bt, confidence=0.0)
-        plan_high = Plan(created_at=now, horizon=timedelta(hours=1), entries=[], battery_target=bt, confidence=1.0)
+        plan_low = Plan(
+            created_at=now,
+            horizon=timedelta(hours=1),
+            entries=[],
+            battery_target=bt,
+            confidence=0.0,
+        )
+        plan_high = Plan(
+            created_at=now,
+            horizon=timedelta(hours=1),
+            entries=[],
+            battery_target=bt,
+            confidence=1.0,
+        )
         assert plan_low.confidence == 0.0
         assert plan_high.confidence == 1.0
 
@@ -437,6 +457,7 @@ class TestPlan:
 # ---------------------------------------------------------------------------
 # TestOptimizerResult
 # ---------------------------------------------------------------------------
+
 
 class TestOptimizerResult:
     def test_create_with_decisions_and_battery_discharge_action(self):
@@ -493,6 +514,7 @@ class TestOptimizerResult:
 # TestEnums
 # ---------------------------------------------------------------------------
 
+
 class TestEnums:
     def test_action_values(self):
         assert Action.ON == "on"
@@ -519,6 +541,7 @@ class TestEnums:
 # ---------------------------------------------------------------------------
 # TestBatteryConfig
 # ---------------------------------------------------------------------------
+
 
 class TestBatteryConfig:
     def test_create_battery_config(self):
@@ -571,6 +594,7 @@ class TestBatteryConfig:
 # TestApplianceState
 # ---------------------------------------------------------------------------
 
+
 class TestApplianceState:
     def test_create_basic(self):
         state = ApplianceState(
@@ -610,9 +634,10 @@ class TestApplianceState:
 # TestBatteryTarget
 # ---------------------------------------------------------------------------
 
+
 class TestBatteryTarget:
     def test_create(self):
-        target_time = datetime(2026, 3, 23, 7, 0, tzinfo=timezone.utc)
+        target_time = datetime(2026, 3, 23, 7, 0, tzinfo=UTC)
         bt = BatteryTarget(
             target_soc=95.0,
             target_time=target_time,

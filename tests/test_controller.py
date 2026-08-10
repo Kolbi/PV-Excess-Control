@@ -1,7 +1,8 @@
 """Tests for PV Excess Control controller module."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -18,7 +19,6 @@ from custom_components.pv_excess_control.controller import Controller
 from custom_components.pv_excess_control.models import (
     Action,
     ApplianceConfig,
-    ApplianceState,
     BatteryDischargeAction,
     ControlDecision,
     PowerState,
@@ -29,8 +29,9 @@ from custom_components.pv_excess_control.models import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _utcnow() -> datetime:
-    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 22, 12, 0, 0, tzinfo=UTC)
 
 
 def _make_appliance_config(**kwargs) -> ApplianceConfig:
@@ -63,7 +64,9 @@ def _make_appliance_config(**kwargs) -> ApplianceConfig:
     return ApplianceConfig(**defaults)
 
 
-def _make_state(entity_id: str, state_value: str, attributes: dict | None = None) -> MagicMock:
+def _make_state(
+    entity_id: str, state_value: str, attributes: dict | None = None
+) -> MagicMock:
     """Create a mock HA state object."""
     mock_state = MagicMock()
     mock_state.state = state_value
@@ -93,6 +96,7 @@ def _make_hass(states_map: dict[str, MagicMock] | None = None) -> MagicMock:
 # ---------------------------------------------------------------------------
 # TestCollectPowerState
 # ---------------------------------------------------------------------------
+
 
 class TestCollectPowerState:
     def test_collect_power_state(self):
@@ -209,19 +213,23 @@ class TestCollectPowerState:
         """Power sensors reporting in kW are converted to watts."""
         states_map = {
             "sensor.pv_power": _make_state(
-                "sensor.pv_power", "9.9",
+                "sensor.pv_power",
+                "9.9",
                 attributes={"unit_of_measurement": "kW"},
             ),
             "sensor.grid_export": _make_state(
-                "sensor.grid_export", "4.8",
+                "sensor.grid_export",
+                "4.8",
                 attributes={"unit_of_measurement": "kW"},
             ),
             "sensor.load_power": _make_state(
-                "sensor.load_power", "5.1",
+                "sensor.load_power",
+                "5.1",
                 attributes={"unit_of_measurement": "kW"},
             ),
             "sensor.battery_power": _make_state(
-                "sensor.battery_power", "0.5",
+                "sensor.battery_power",
+                "0.5",
                 attributes={"unit_of_measurement": "kW"},
             ),
         }
@@ -244,11 +252,13 @@ class TestCollectPowerState:
         """Power sensors already in W are not modified."""
         states_map = {
             "sensor.pv_power": _make_state(
-                "sensor.pv_power", "5000.0",
+                "sensor.pv_power",
+                "5000.0",
                 attributes={"unit_of_measurement": "W"},
             ),
             "sensor.grid_export": _make_state(
-                "sensor.grid_export", "1200.0",
+                "sensor.grid_export",
+                "1200.0",
                 attributes={"unit_of_measurement": "W"},
             ),
         }
@@ -280,6 +290,7 @@ class TestCollectPowerState:
 # TestCollectApplianceStates
 # ---------------------------------------------------------------------------
 
+
 class TestCollectApplianceStates:
     def test_collect_appliance_states_on(self):
         """Reads on state and actual power from entity."""
@@ -289,9 +300,11 @@ class TestCollectApplianceStates:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            actual_power_entity="sensor.wm_power",
-        )]
+        configs = [
+            _make_appliance_config(
+                actual_power_entity="sensor.wm_power",
+            )
+        ]
         runtime_tracker = {"appliance_1": timedelta(hours=1, minutes=30)}
         result = controller.collect_appliance_states(configs, runtime_tracker)
 
@@ -307,17 +320,20 @@ class TestCollectApplianceStates:
         states_map = {
             "switch.tesla_charge": _make_state("switch.tesla_charge", "on"),
             "sensor.twc_total_power": _make_state(
-                "sensor.twc_total_power", "5.07",
+                "sensor.twc_total_power",
+                "5.07",
                 attributes={"unit_of_measurement": "kW"},
             ),
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="tesla",
-            entity_id="switch.tesla_charge",
-            actual_power_entity="sensor.twc_total_power",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="tesla",
+                entity_id="switch.tesla_charge",
+                actual_power_entity="sensor.twc_total_power",
+            )
+        ]
         result = controller.collect_appliance_states(configs, {})
 
         state = result[0]
@@ -343,18 +359,22 @@ class TestCollectApplianceStates:
         """Reads EV connected binary sensor."""
         states_map = {
             "switch.ev_charger": _make_state("switch.ev_charger", "on"),
-            "binary_sensor.ev_connected": _make_state("binary_sensor.ev_connected", "on"),
+            "binary_sensor.ev_connected": _make_state(
+                "binary_sensor.ev_connected", "on"
+            ),
             "number.ev_current": _make_state("number.ev_current", "10"),
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="ev_charger",
-            entity_id="switch.ev_charger",
-            ev_connected_entity="binary_sensor.ev_connected",
-            current_entity="number.ev_current",
-            dynamic_current=True,
-        )]
+        configs = [
+            _make_appliance_config(
+                id="ev_charger",
+                entity_id="switch.ev_charger",
+                ev_connected_entity="binary_sensor.ev_connected",
+                current_entity="number.ev_current",
+                dynamic_current=True,
+            )
+        ]
         result = controller.collect_appliance_states(configs, {})
 
         assert result[0].ev_connected is True
@@ -364,15 +384,19 @@ class TestCollectApplianceStates:
         """Reads EV disconnected binary sensor."""
         states_map = {
             "switch.ev_charger": _make_state("switch.ev_charger", "off"),
-            "binary_sensor.ev_connected": _make_state("binary_sensor.ev_connected", "off"),
+            "binary_sensor.ev_connected": _make_state(
+                "binary_sensor.ev_connected", "off"
+            ),
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="ev_charger",
-            entity_id="switch.ev_charger",
-            ev_connected_entity="binary_sensor.ev_connected",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="ev_charger",
+                entity_id="switch.ev_charger",
+                ev_connected_entity="binary_sensor.ev_connected",
+            )
+        ]
         result = controller.collect_appliance_states(configs, {})
 
         assert result[0].ev_connected is False
@@ -391,6 +415,7 @@ class TestCollectApplianceStates:
 # ---------------------------------------------------------------------------
 # TestApplyDecisions
 # ---------------------------------------------------------------------------
+
 
 class TestApplyDecisions:
     @pytest.mark.asyncio
@@ -456,10 +481,12 @@ class TestApplyDecisions:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="heat_pump",
-            entity_id="climate.heat_pump",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="heat_pump",
+                entity_id="climate.heat_pump",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="heat_pump",
@@ -485,12 +512,14 @@ class TestApplyDecisions:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="ev_charger",
-            entity_id="switch.ev_charger",
-            dynamic_current=True,
-            current_entity="number.ev_current",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="ev_charger",
+                entity_id="switch.ev_charger",
+                dynamic_current=True,
+                current_entity="number.ev_current",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="ev_charger",
@@ -506,7 +535,8 @@ class TestApplyDecisions:
         assert len(applied) == 1
         assert applied[0]["action"] == Action.SET_CURRENT
         hass.services.async_call.assert_any_call(
-            "number", "set_value",
+            "number",
+            "set_value",
             {"entity_id": "number.ev_current", "value": 10.0},
         )
 
@@ -584,10 +614,12 @@ class TestApplyDecisions:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="toggle_1",
-            entity_id="input_boolean.my_toggle",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="toggle_1",
+                entity_id="input_boolean.my_toggle",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="toggle_1",
@@ -613,10 +645,12 @@ class TestApplyDecisions:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="light_1",
-            entity_id="light.my_light",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="light_1",
+                entity_id="light.my_light",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="light_1",
@@ -642,10 +676,12 @@ class TestApplyDecisions:
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
-        configs = [_make_appliance_config(
-            id="boiler_1",
-            entity_id="water_heater.boiler",
-        )]
+        configs = [
+            _make_appliance_config(
+                id="boiler_1",
+                entity_id="water_heater.boiler",
+            )
+        ]
         decisions = [
             ControlDecision(
                 appliance_id="boiler_1",
@@ -667,6 +703,7 @@ class TestApplyDecisions:
 # ---------------------------------------------------------------------------
 # TestSwitchInterval
 # ---------------------------------------------------------------------------
+
 
 class TestSwitchInterval:
     @pytest.mark.asyncio
@@ -708,8 +745,8 @@ class TestSwitchInterval:
         config = _make_appliance_config(switch_interval=300)
 
         # Simulate a state change long ago
-        controller._last_state_change["appliance_1"] = (
-            datetime.now() - timedelta(seconds=600)
+        controller._last_state_change["appliance_1"] = datetime.now() - timedelta(
+            seconds=600
         )
 
         decisions = [
@@ -754,6 +791,7 @@ class TestSwitchInterval:
 # ---------------------------------------------------------------------------
 # TestOnOnlyPreventsOff
 # ---------------------------------------------------------------------------
+
 
 class TestOnOnly:
     @pytest.mark.asyncio
@@ -808,6 +846,7 @@ class TestOnOnly:
 # ---------------------------------------------------------------------------
 # TestFiresEvent
 # ---------------------------------------------------------------------------
+
 
 class TestFiresEvent:
     @pytest.mark.asyncio
@@ -896,6 +935,7 @@ class TestFiresEvent:
 # TestBatteryDischargeLimit
 # ---------------------------------------------------------------------------
 
+
 class TestBatteryDischargeLimit:
     @pytest.mark.asyncio
     async def test_battery_discharge_limit_set(self):
@@ -911,7 +951,8 @@ class TestBatteryDischargeLimit:
         )
 
         hass.services.async_call.assert_called_once_with(
-            "number", "set_value",
+            "number",
+            "set_value",
             {"entity_id": "number.battery_max_discharge", "value": 500.0},
         )
 
@@ -929,7 +970,8 @@ class TestBatteryDischargeLimit:
         )
 
         hass.services.async_call.assert_called_once_with(
-            "number", "set_value",
+            "number",
+            "set_value",
             {"entity_id": "number.battery_max_discharge", "value": 5000.0},
         )
 
@@ -967,6 +1009,7 @@ class TestBatteryDischargeLimit:
 # ---------------------------------------------------------------------------
 # TestSensorHelpers
 # ---------------------------------------------------------------------------
+
 
 class TestSensorHelpers:
     def test_read_sensor_valid(self):
@@ -1047,7 +1090,9 @@ class TestSensorHelpers:
     def test_read_binary_unavailable(self):
         """Returns None for unavailable binary sensor."""
         states_map = {
-            "binary_sensor.connected": _make_state("binary_sensor.connected", "unavailable"),
+            "binary_sensor.connected": _make_state(
+                "binary_sensor.connected", "unavailable"
+            ),
         }
         hass = _make_hass(states_map)
         controller = Controller(hass, {})
@@ -1073,6 +1118,7 @@ class TestSensorHelpers:
 # TestCanChangeState
 # ---------------------------------------------------------------------------
 
+
 class TestCanChangeState:
     def test_can_change_no_previous(self):
         """Can change state when no previous change recorded."""
@@ -1096,8 +1142,8 @@ class TestCanChangeState:
         hass = _make_hass()
         controller = Controller(hass, {})
         config = _make_appliance_config(switch_interval=300)
-        controller._last_state_change["appliance_1"] = (
-            datetime.now() - timedelta(seconds=600)
+        controller._last_state_change["appliance_1"] = datetime.now() - timedelta(
+            seconds=600
         )
 
         assert controller._can_change_state(config) is True

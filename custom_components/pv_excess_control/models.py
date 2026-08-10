@@ -1,4 +1,5 @@
 """Data models for PV Excess Control. Pure Python - no HA dependencies."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ from .const import Action, BatteryStrategy, PlanReason
 @dataclass
 class HourlyForecast:
     """Expected solar production for a specific hour."""
+
     start: datetime
     end: datetime
     expected_kwh: float
@@ -19,6 +21,7 @@ class HourlyForecast:
 @dataclass
 class ForecastData:
     """Normalized forecast data from any provider."""
+
     remaining_today_kwh: float
     hourly_breakdown: list[HourlyForecast] = field(default_factory=list)
     tomorrow_total_kwh: float | None = None
@@ -33,6 +36,7 @@ class PowerState:
     taken, while ``0.0`` means the sensor reported a genuine zero.
     Downstream consumers must not conflate the two.
     """
+
     pv_production: float | None
     grid_export: float | None
     grid_import: float | None
@@ -47,6 +51,7 @@ class PowerState:
 @dataclass
 class ApplianceConfig:
     """Configuration for a managed appliance."""
+
     id: str
     name: str
     entity_id: str
@@ -83,12 +88,18 @@ class ApplianceConfig:
     max_grid_power: float | None
 
     # Fields with defaults (must come after non-default fields)
-    cheap_price_threshold: float | None = None  # Per-appliance cheap threshold; None = use global
+    cheap_price_threshold: float | None = (
+        None  # Per-appliance cheap threshold; None = use global
+    )
     ev_target_soc: float | None = None
     start_after: time | None = None
     end_before: time | None = None
-    averaging_window: int | None = None  # Per-appliance history window in seconds (None = use global)
-    requires_appliance: str | None = None  # Subentry ID of required dependency appliance
+    averaging_window: int | None = (
+        None  # Per-appliance history window in seconds (None = use global)
+    )
+    requires_appliance: str | None = (
+        None  # Subentry ID of required dependency appliance
+    )
     helper_only: bool = False  # If True, this appliance runs only when at least one dependent (an appliance with requires_appliance pointing at it) is running. Has no effect on its own allocation.
     override_active: bool = False
     override_until: datetime | None = None
@@ -118,6 +129,7 @@ class ApplianceConfig:
 @dataclass
 class ApplianceState:
     """Runtime state of a managed appliance."""
+
     appliance_id: str
     is_on: bool
     current_power: float
@@ -133,6 +145,7 @@ class ApplianceState:
 @dataclass(frozen=True)
 class TariffWindow:
     """A time window with an energy price."""
+
     start: datetime
     end: datetime
     price: float
@@ -142,6 +155,7 @@ class TariffWindow:
 @dataclass
 class TariffInfo:
     """Current tariff context for the optimizer."""
+
     current_price: float
     feed_in_tariff: float
     cheap_price_threshold: float
@@ -157,6 +171,7 @@ class TariffInfo:
 @dataclass(frozen=True)
 class BatteryTarget:
     """Battery charging strategy for the planning horizon."""
+
     target_soc: float
     target_time: datetime
     strategy: BatteryStrategy
@@ -165,6 +180,7 @@ class BatteryTarget:
 @dataclass(frozen=True)
 class BatteryConfig:
     """Battery system configuration."""
+
     capacity_kwh: float
     max_discharge_entity: str | None
     max_discharge_default: float | None
@@ -177,6 +193,7 @@ class BatteryConfig:
 @dataclass
 class TimeSlot:
     """A planning time slot with expected conditions."""
+
     start: datetime
     end: datetime
     expected_solar_watts: float  # Expected PV production
@@ -188,14 +205,18 @@ class TimeSlot:
 @dataclass
 class BatteryAllocation:
     """How battery charging should be allocated across the timeline."""
+
     charging_needed_kwh: float  # Total energy needed to reach target
     slots_reserved: list[TimeSlot]  # Slots where excess is reserved for battery
-    excess_after_battery: dict[int, float]  # slot_index -> remaining excess after battery allocation
+    excess_after_battery: dict[
+        int, float
+    ]  # slot_index -> remaining excess after battery allocation
 
 
 @dataclass(frozen=True)
 class PlanEntry:
     """A planned action for an appliance."""
+
     appliance_id: str
     action: Action
     target_current: float | None
@@ -207,6 +228,7 @@ class PlanEntry:
 @dataclass
 class Plan:
     """Output of the planner - schedule for the next hours."""
+
     created_at: datetime
     horizon: timedelta
     entries: list[PlanEntry]
@@ -217,6 +239,7 @@ class Plan:
 @dataclass(frozen=True)
 class ControlDecision:
     """Output of the optimizer for a single appliance."""
+
     appliance_id: str
     action: Action
     target_current: float | None
@@ -228,6 +251,7 @@ class ControlDecision:
 @dataclass(frozen=True)
 class BatteryDischargeAction:
     """Battery discharge limit decision."""
+
     should_limit: bool
     max_discharge_watts: float | None = None
 
@@ -235,6 +259,7 @@ class BatteryDischargeAction:
 @dataclass
 class OptimizerResult:
     """Complete output of the optimizer for a single cycle."""
+
     decisions: list[ControlDecision]
     battery_discharge_action: BatteryDischargeAction
 
@@ -248,6 +273,7 @@ class InverterGridChargeConfig:
     - Two-step: select-mode + select-command (mode_entity_id + enable_entity_id, no power).
     - Three-step (e.g. Sungrow mkaiser): select-mode + select-command + number-power.
     """
+
     enable_entity_id: str
     enable_engage_value: str
     enable_disengage_value: str
