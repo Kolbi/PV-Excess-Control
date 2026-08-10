@@ -420,17 +420,20 @@ class Controller:
             if config.on_only:
                 return
             await self._turn_off(domain, entity_id)
-        elif decision.action == Action.SET_CURRENT:
-            if config.current_entity and decision.target_current is not None:
-                current_domain = config.current_entity.split(".")[0]
-                await self.hass.services.async_call(
-                    current_domain,
-                    "set_value",
-                    {
-                        "entity_id": config.current_entity,
-                        "value": decision.target_current,
-                    },
-                )
+        elif (
+            decision.action == Action.SET_CURRENT
+            and config.current_entity
+            and decision.target_current is not None
+        ):
+            current_domain = config.current_entity.split(".")[0]
+            await self.hass.services.async_call(
+                current_domain,
+                "set_value",
+                {
+                    "entity_id": config.current_entity,
+                    "value": decision.target_current,
+                },
+            )
 
     async def _turn_on(self, domain: str, entity_id: str) -> None:
         """Turn on an entity based on its domain."""
