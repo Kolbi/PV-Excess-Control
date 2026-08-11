@@ -1273,9 +1273,10 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 current_step=sub_data.get(CONF_CURRENT_STEP, 0.1),
                 override_active=override_active,
                 max_daily_activations=max_activations,
-                on_threshold=sub_data.get(
-                    CONF_ON_THRESHOLD,
-                    global_on_threshold,
+                on_threshold=(
+                    sub_data.get(CONF_ON_THRESHOLD)
+                    if sub_data.get(CONF_DYNAMIC_CURRENT, False)
+                    else sub_data.get(CONF_ON_THRESHOLD, global_on_threshold)
                 ),
                 completion_power_threshold=sub_data.get(
                     CONF_COMPLETION_POWER_THRESHOLD
