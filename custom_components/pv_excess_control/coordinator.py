@@ -1182,7 +1182,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _get_appliance_configs(self) -> list[ApplianceConfig]:
         """Convert config entry subentries to ApplianceConfig list."""
         configs: list[ApplianceConfig] = []
-        global_on_threshold = self.config_entry.data.get(CONF_ON_THRESHOLD)       
+        global_on_threshold = self.config_entry.data.get(CONF_ON_THRESHOLD)
 
         # Subentries are stored in config_entry.subentries (HA 2024.12+)
         subentries = getattr(self.config_entry, "subentries", {})
