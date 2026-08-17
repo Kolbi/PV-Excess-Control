@@ -459,7 +459,19 @@ class Optimizer:
                     target_power = appliance.max_current * self.grid_voltage * phases
                     power_consumed = max(target_power - current_power, 0.0)
                 else:
-                    power_consumed = appliance.max_current * self.grid_voltage * phases
+                    # Keep the manual override active and pre-set max current,
+                    # but do not reserve power when the EV is explicitly
+                    # reported as disconnected. No vehicle means no additional
+                    # load can actually be created by this decision.
+                    ev_explicitly_disconnected = (
+                        appliance.ev_connected_entity
+                        and state.ev_connected is False
+                    )
+                    power_consumed = (
+                        0.0
+                        if ev_explicitly_disconnected
+                        else appliance.max_current * self.grid_voltage * phases
+                    )                  
                 return (
                     ControlDecision(
                         appliance_id=appliance.id,
