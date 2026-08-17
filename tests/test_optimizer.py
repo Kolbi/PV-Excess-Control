@@ -609,7 +609,7 @@ class TestOptimizerBudgets:
         # 500 W excess remains available to the pool pump.
         assert decisions["pool_pump"].action == Action.ON
         assert "500W >= 300W" in decisions["pool_pump"].reason
-    
+
     def test_avg_budget_tracked(self):
         """Two appliances: first takes budget, second gets none."""
         optimizer = _optimizer_for_tests()

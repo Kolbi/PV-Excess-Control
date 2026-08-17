@@ -464,14 +464,13 @@ class Optimizer:
                     # reported as disconnected. No vehicle means no additional
                     # load can actually be created by this decision.
                     ev_explicitly_disconnected = (
-                        appliance.ev_connected_entity
-                        and state.ev_connected is False
+                        appliance.ev_connected_entity and state.ev_connected is False
                     )
                     power_consumed = (
                         0.0
                         if ev_explicitly_disconnected
                         else appliance.max_current * self.grid_voltage * phases
-                    )                  
+                    )
                 return (
                     ControlDecision(
                         appliance_id=appliance.id,
