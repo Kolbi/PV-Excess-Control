@@ -555,6 +555,61 @@ class TestOptimizerDynamicCurrent:
 class TestOptimizerBudgets:
     """Test that the avg_budget is tracked correctly across allocations."""
 
+    def test_disconnected_dynamic_override_does_not_consume_budget(self):
+        """A disconnected EV in manual override must not block later appliances."""
+        optimizer = _optimizer_for_tests()
+
+        wallbox = _make_appliance(
+            id="wallbox",
+            name="Wallbox",
+            priority=1,
+            nominal_power=3680.0,
+            dynamic_current=True,
+            min_current=6.0,
+            max_current=16.0,
+            current_entity="number.wallbox_current",
+            ev_connected_entity="binary_sensor.ev_connected",
+            phases=1,
+            override_active=True,
+        )
+        pool_pump = _make_appliance(
+            id="pool_pump",
+            name="Poolpumpe",
+            priority=2,
+            nominal_power=100.0,
+        )
+
+        wallbox_state = _make_state(
+            id="wallbox",
+            is_on=False,
+            current_power=0.0,
+            ev_connected=False,
+        )
+        pool_pump_state = _make_state(id="pool_pump")
+
+        power = _make_power(excess=500.0)
+
+        result = optimizer.optimize(
+            power_state=power,
+            appliances=[wallbox, pool_pump],
+            appliance_states=[wallbox_state, pool_pump_state],
+            plan=_empty_plan(),
+            power_history=[power],
+            tariff=_make_tariff(),
+        )
+
+        decisions = {d.appliance_id: d for d in result.decisions}
+
+        # Manual override is still active and prepares the wallbox for 16 A.
+        assert decisions["wallbox"].action == Action.SET_CURRENT
+        assert decisions["wallbox"].target_current == 16.0
+        assert decisions["wallbox"].overrides_plan is True
+
+        # But the disconnected wallbox must not reserve 3680 W, so the
+        # 500 W excess remains available to the pool pump.
+        assert decisions["pool_pump"].action == Action.ON
+        assert "500W >= 300W" in decisions["pool_pump"].reason
+    
     def test_avg_budget_tracked(self):
         """Two appliances: first takes budget, second gets none."""
         optimizer = _optimizer_for_tests()
