@@ -259,6 +259,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             timezone_str=tz_name,
             enable_preemption=enable_preemption,
             off_threshold=off_threshold,
+            controller_interval=controller_interval,            
         )
         self.planner = Planner(grid_voltage=grid_voltage, timezone_str=tz_name)
 
