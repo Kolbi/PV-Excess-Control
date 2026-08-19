@@ -4694,11 +4694,7 @@ class TestDualBudgetInvariant:
 
         decision = result.decisions[0]
         assert decision.action == Action.IDLE
-        assert (
-            f"Insufficient excess ({expected_average:.0f}W"
-            in decision.reason
-        )
-
+        assert f"Insufficient excess ({expected_average:.0f}W" in decision.reason
 
 
 class TestDynamicCurrentBumpClamp:
