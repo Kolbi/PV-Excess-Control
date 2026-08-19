@@ -24,6 +24,7 @@ MIN_CURRENT = 0.0
 MAX_CURRENT = 32.0
 MIN_PHASES = 1
 MAX_PHASES = 3
+MAX_AVERAGING_WINDOW = 1800  # seconds
 
 
 class InverterType(StrEnum):
