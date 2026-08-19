@@ -136,6 +136,7 @@ from .const import (
     DEFAULT_PLANNER_INTERVAL,
     DEFAULT_SWITCH_INTERVAL,
     DOMAIN,
+    MAX_AVERAGING_WINDOW
     MAX_CURRENT,
     MAX_PRIORITY,
     MIN_CURRENT,
@@ -389,7 +390,7 @@ def _appliance_constraints_schema(
         ): NumberSelector(
             NumberSelectorConfig(
                 min=30,
-                max=1800,
+                max=MAX_AVERAGING_WINDOW,
                 step=30,
                 unit_of_measurement="s",
                 mode=NumberSelectorMode.BOX,
