@@ -65,7 +65,7 @@ class Optimizer:
         self.enable_preemption = enable_preemption
         self._off_threshold = off_threshold
         self._min_good_samples = min_good_samples
-        self._controller_interval = max(1, controller_interval)      
+        self._controller_interval = max(1, controller_interval)
         # Initialised here for safety; optimize() overwrites both on every cycle.
         self._plan_influence: str = "none"
         self._grid_supplement_count: int = 0
@@ -160,7 +160,7 @@ class Optimizer:
                 entries_needed = max(
                     1,
                     int(app.averaging_window / self._controller_interval),
-                )              
+                )
                 recent = (
                     power_history[-entries_needed:]
                     if len(power_history) >= entries_needed
