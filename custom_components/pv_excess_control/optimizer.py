@@ -159,7 +159,7 @@ class Optimizer:
                 # Calculate how many history entries fit in the custom window
                 entries_needed = max(
                     1,
-                    int(app.averaging_window / self._controller_interval),
+                    math.ceil(app.averaging_window / self._controller_interval),                  
                 )
                 recent = (
                     power_history[-entries_needed:]
