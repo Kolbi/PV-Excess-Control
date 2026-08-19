@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import pytest
 
+from custom_components.pv_excess_control.coordinator import (
+    _history_size_for_interval,
+)
 from custom_components.pv_excess_control.const import (
     CONF_AUTO_BATTERY_GRID_CHARGE,
     CONF_BATTERY_GRID_CHARGE_POWER_W,
@@ -17,6 +20,22 @@ from custom_components.pv_excess_control.const import (
     CONF_INVERTER_FORCE_CHARGE_ENABLE_ENGAGE_VALUE,
     CONF_INVERTER_FORCE_CHARGE_ENABLE_DISENGAGE_VALUE,
 )
+
+
+@pytest.mark.parametrize(
+    ("controller_interval", "expected_size"),
+    [
+        (15, 120),
+        (30, 60),
+        (60, 30),
+    ],
+)
+def test_history_size_tracks_controller_interval(
+    controller_interval,
+    expected_size,
+):
+    """History must always cover the full 30-minute averaging window."""
+    assert _history_size_for_interval(controller_interval) == expected_size
 
 
 @pytest.mark.asyncio
