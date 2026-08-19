@@ -104,6 +104,7 @@ from .const import (
     DEFAULT_STARTUP_GRACE_PERIOD,
     DEFAULT_SWITCH_INTERVAL,
     DOMAIN,
+    MAX_AVERAGING_WINDOW,
     BatteryStrategy,
     PlanInfluence,
     TariffProvider as TariffProviderEnum,
@@ -147,10 +148,17 @@ _LOGGER = logging.getLogger(__name__)
 _OFF_STATES = {"off", "false", "False", "0"}
 _UNAVAILABLE_STATES = {STATE_UNAVAILABLE, STATE_UNKNOWN, "none", ""}
 
-# Maximum number of power history entries to keep (~30 min at 30s intervals)
-MAX_HISTORY_SIZE = 60
 _DAILY_STATE_STORAGE_VERSION = 1
 _DAILY_STATE_SAVE_DELAY = 60
+
+
+def _history_size_for_interval(controller_interval: int) -> int:
+    """Return the number of samples needed for the maximum averaging window."""
+    return max(
+        1,
+        math.ceil(MAX_AVERAGING_WINDOW / max(controller_interval, 1)),
+    )
+
 
 # Multipliers to normalise power values to watts.
 _POWER_UNIT_MULTIPLIERS: dict[str, float] = {
@@ -247,6 +255,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             config_entry=config_entry,
             update_interval=timedelta(seconds=controller_interval),
         )
+        self._max_history_size = _history_size_for_interval(controller_interval)
 
         grid_voltage = config_entry.data.get(CONF_GRID_VOLTAGE, DEFAULT_GRID_VOLTAGE)
         tz_name = (
@@ -259,6 +268,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             timezone_str=tz_name,
             enable_preemption=enable_preemption,
             off_threshold=off_threshold,
+            controller_interval=controller_interval,
         )
         self.planner = Planner(grid_voltage=grid_voltage, timezone_str=tz_name)
 
@@ -733,10 +743,11 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _fmt(power_state.excess_power),
         )
 
-        # 2. Append to history (keep last MAX_HISTORY_SIZE entries)
+        # 2. Append to history. Keep enough samples to cover the maximum
+        # configurable averaging window regardless of controller interval.
         self.power_history.append(power_state)
-        if len(self.power_history) > MAX_HISTORY_SIZE:
-            self.power_history.pop(0)
+        if len(self.power_history) > self._max_history_size:
+            del self.power_history[: -self._max_history_size]
 
         # 3. Run planner on its interval
         self._planner_counter += 1

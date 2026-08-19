@@ -16,6 +16,7 @@ from datetime import time
 from zoneinfo import ZoneInfo
 
 from custom_components.pv_excess_control.const import (
+    DEFAULT_CONTROLLER_INTERVAL,
     DEFAULT_DYNAMIC_ON_THRESHOLD,
     DEFAULT_GRID_VOLTAGE,
     DEFAULT_OFF_THRESHOLD,
@@ -57,12 +58,14 @@ class Optimizer:
         enable_preemption: bool = True,
         off_threshold: int = DEFAULT_OFF_THRESHOLD,
         min_good_samples: int = 3,
+        controller_interval: int = DEFAULT_CONTROLLER_INTERVAL,
     ) -> None:
         self.grid_voltage = grid_voltage
         self._tz = ZoneInfo(timezone_str) if timezone_str else None
         self.enable_preemption = enable_preemption
         self._off_threshold = off_threshold
         self._min_good_samples = min_good_samples
+        self._controller_interval = max(1, controller_interval)
         # Initialised here for safety; optimize() overwrites both on every cycle.
         self._plan_influence: str = "none"
         self._grid_supplement_count: int = 0
@@ -151,11 +154,13 @@ class Optimizer:
         # avg_budget fallback (the same branch as appliances with no
         # custom window).
         self._appliance_avg_excess: dict[str, float] = {}
-        controller_interval = 30  # default, used for window→entry count conversion
         for app in appliances:
             if app.averaging_window is not None and app.averaging_window > 0:
                 # Calculate how many history entries fit in the custom window
-                entries_needed = max(1, int(app.averaging_window / controller_interval))
+                entries_needed = max(
+                    1,
+                    math.ceil(app.averaging_window / self._controller_interval),
+                )
                 recent = (
                     power_history[-entries_needed:]
                     if len(power_history) >= entries_needed

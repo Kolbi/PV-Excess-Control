@@ -4642,6 +4642,60 @@ class TestDualBudgetInvariant:
                 f"got {kona_decision.target_current:.2f} A"
             )
 
+    @pytest.mark.parametrize(
+        ("controller_interval", "averaging_window", "expected_average"),
+        [
+            (15, 60, 250.0),
+            (60, 120, 350.0),
+        ],
+    )
+    def test_per_appliance_averaging_window_uses_controller_interval(
+        self,
+        controller_interval,
+        averaging_window,
+        expected_average,
+    ):
+        """Custom averaging windows must respect the configured controller interval."""
+        import dataclasses
+
+        appliance = dataclasses.replace(
+            _make_appliance(
+                id="test_app",
+                nominal_power=1000.0,
+                on_threshold=0,
+            ),
+            averaging_window=averaging_window,
+        )
+        state = _make_state(id="test_app")
+
+        # Ordered oldest -> newest.
+        #
+        # At 15s interval  60s window:
+        #   last 4 samples = 100, 200, 300, 400 -> avg 250 W
+        #
+        # At 60s interval  120s window:
+        #   last 2 samples = 300, 400 -> avg 350 W
+        history = [
+            _make_power(excess=value)
+            for value in (0.0, 0.0, 100.0, 200.0, 300.0, 400.0)
+        ]
+
+        optimizer = _optimizer_for_tests(
+            controller_interval=controller_interval,
+        )
+        result = optimizer.optimize(
+            power_state=_make_power(excess=400.0),
+            appliances=[appliance],
+            appliance_states=[state],
+            plan=_empty_plan(),
+            power_history=history,
+            tariff=_make_tariff(),
+        )
+
+        decision = result.decisions[0]
+        assert decision.action == Action.IDLE
+        assert f"Insufficient excess ({expected_average:.0f}W" in decision.reason
+
 
 class TestDynamicCurrentBumpClamp:
     """Pin the min(instant_budget, avg_budget) asymmetric clamp behavior
