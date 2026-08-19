@@ -746,7 +746,7 @@ class PvExcessCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
         # 2. Append to history. Keep enough samples to cover the maximum
-        # configurable averaging window regardless of controller interval.       
+        # configurable averaging window regardless of controller interval.
         self.power_history.append(power_state)
         if len(self.power_history) > self._max_history_size:
             del self.power_history[: -self._max_history_size]
