@@ -148,8 +148,6 @@ _LOGGER = logging.getLogger(__name__)
 _OFF_STATES = {"off", "false", "False", "0"}
 _UNAVAILABLE_STATES = {STATE_UNAVAILABLE, STATE_UNKNOWN, "none", ""}
 
-# Maximum number of power history entries to keep (~30 min at 30s intervals)
-MAX_HISTORY_SIZE = 60
 _DAILY_STATE_STORAGE_VERSION = 1
 _DAILY_STATE_SAVE_DELAY = 60
 
